@@ -1,0 +1,406 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Reliance Group - Supply Chain Dashboard</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.2/dist/chart.umd.min.js"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f8fafc; /* Slate 50 */
+            color: #1e293b; /* Slate 800 */
+        }
+        .dashboard-card {
+            background-color: #ffffff; /* White */
+            border: 1px solid #e2e8f0; /* Slate 200 */
+            border-radius: 1rem;
+            padding: 1.5rem;
+            box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.05), 0 2px 4px -2px rgb(0 0 0 / 0.05);
+            transition: all 0.3s ease-in-out;
+        }
+        .dashboard-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.07), 0 4px 6px -4px rgb(0 0 0 / 0.07);
+        }
+        .kpi-value {
+            font-size: 2.25rem;
+            font-weight: 700;
+        }
+        .kpi-label {
+            font-size: 0.875rem;
+            color: #64748b; /* Slate 500 */
+        }
+        .chart-container {
+            position: relative;
+            height: 300px;
+            width: 100%;
+        }
+        .header {
+            border-bottom: 1px solid #e2e8f0; /* Slate 200 */
+            padding-bottom: 1rem;
+            margin-bottom: 1.5rem;
+        }
+        .text-reliance-blue {
+            color: #00A3E0;
+        }
+        .bg-reliance-blue {
+            background-color: #00A3E0;
+        }
+        .ring-reliance-blue {
+            ring-color: #00A3E0;
+        }
+    </style>
+</head>
+<body class="p-4 sm:p-6 lg:p-8">
+    <div class="max-w-7xl mx-auto">
+        <!-- Header -->
+        <header class="header flex justify-between items-center">
+            <div>
+                <h1 class="text-2xl md:text-3xl font-bold text-slate-900">Reliance Group</h1>
+                <p class="text-sm text-slate-500">Supply Chain & Logistics Dashboard</p>
+            </div>
+            <div>
+                 <span id="current-time" class="text-sm text-slate-500"></span>
+            </div>
+        </header>
+
+        <main class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+            <!-- KPIs -->
+            <div class="dashboard-card flex items-center col-span-1">
+                <div class="p-3 bg-green-100 rounded-lg mr-4">
+                    <i data-lucide="check-circle" class="w-8 h-8 text-green-600"></i>
+                </div>
+                <div>
+                    <p class="kpi-label">Order Fulfillment Rate</p>
+                    <p class="kpi-value text-slate-900">98.7%</p>
+                    <p class="text-sm flex items-center text-green-600">
+                        <i data-lucide="arrow-up" class="w-4 h-4 mr-1"></i>
+                        <span>+1.2% vs Last Qtr</span>
+                    </p>
+                </div>
+            </div>
+
+            <div class="dashboard-card flex items-center col-span-1">
+                <div class="p-3 bg-blue-100 rounded-lg mr-4">
+                    <i data-lucide="truck" class="w-8 h-8 text-blue-600"></i>
+                </div>
+                <div>
+                    <p class="kpi-label">On-Time Delivery</p>
+                    <p class="kpi-value text-slate-900">96.5%</p>
+                    <p class="text-sm flex items-center text-red-600">
+                        <i data-lucide="activity" class="w-4 h-4 mr-1"></i>
+                        <span>Target: 97.0%</span>
+                    </p>
+                </div>
+            </div>
+
+            <div class="dashboard-card flex items-center col-span-1">
+                 <div class="p-3 bg-slate-100 rounded-lg mr-4">
+                    <i data-lucide="clipboard-check" class="w-8 h-8 text-slate-600"></i>
+                </div>
+                <div>
+                    <p class="kpi-label">Inventory Accuracy</p>
+                    <p class="kpi-value text-slate-900">99.2%</p>
+                    <p class="text-sm flex items-center text-slate-500">
+                        Last Audit: <span id="market-cap-date" class="ml-1"></span>
+                    </p>
+                </div>
+            </div>
+            
+            <div class="dashboard-card flex items-center col-span-1">
+                 <div class="p-3 bg-slate-100 rounded-lg mr-4">
+                    <i data-lucide="timer" class="w-8 h-8 text-slate-600"></i>
+                </div>
+                <div>
+                    <p class="kpi-label">Avg. Order Cycle Time</p>
+                    <p class="kpi-value text-slate-900">28 Hrs</p>
+                    <p class="text-sm flex items-center text-green-600">
+                        <i data-lucide="arrow-down" class="w-4 h-4 mr-1"></i>
+                        <span>-3 hours vs LY</span>
+                    </p>
+                </div>
+            </div>
+
+            <!-- Main Dashboard Area -->
+            <!-- Inventory Distribution -->
+            <div class="dashboard-card col-span-1 md:col-span-2 lg:col-span-2">
+                <h2 class="text-xl font-semibold text-slate-900 mb-4">Inventory Distribution by Category</h2>
+                <div class="chart-container" style="height:320px;">
+                    <canvas id="inventoryDistributionChart"></canvas>
+                </div>
+            </div>
+
+            <!-- Warehouse Throughput -->
+            <div class="dashboard-card col-span-1 md:col-span-2 lg:col-span-2">
+                <h2 class="text-xl font-semibold text-slate-900 mb-4">Warehouse Throughput (Units/Week)</h2>
+                <div class="chart-container" style="height:320px;">
+                    <canvas id="warehouseThroughputChart"></canvas>
+                </div>
+            </div>
+
+            <!-- Logistics Cost Breakdown -->
+            <div class="dashboard-card col-span-1 md:col-span-2 lg:col-span-4">
+                <h2 class="text-xl font-semibold text-slate-900 mb-4">Logistics Costs Breakdown (Quarterly in ₹ Cr)</h2>
+                <div class="chart-container" style="height:350px;">
+                    <canvas id="logisticsCostsChart"></canvas>
+                </div>
+            </div>
+
+            <!-- Distribution Center Performance -->
+            <div class="dashboard-card col-span-1 md:col-span-2 lg:col-span-4">
+                <h2 class="text-xl font-semibold text-slate-900 mb-4">Distribution Center (DC) Performance</h2>
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left text-sm text-slate-700">
+                        <thead class="text-xs text-slate-500 uppercase bg-slate-100">
+                            <tr>
+                                <th scope="col" class="px-4 py-3">DC Location</th>
+                                <th scope="col" class="px-4 py-3 text-center">Capacity Utilization</th>
+                                <th scope="col" class="px-4 py-3 text-center">Orders/Day (Avg)</th>
+                                <th scope="col" class="px-4 py-3 text-center">Dock-to-Stock (Hrs)</th>
+                                <th scope="col" class="px-4 py-3 text-center">Status</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr class="border-b border-slate-200">
+                                <td class="px-4 py-3 font-medium">Mumbai Mega DC</td>
+                                <td class="px-4 py-3 text-center">
+                                    <div class="w-full bg-slate-200 rounded-full h-2.5"><div class="bg-green-500 h-2.5 rounded-full" style="width: 92%"></div></div>
+                                    <span class="text-xs">92%</span>
+                                </td>
+                                <td class="px-4 py-3 text-center">1,25,000</td>
+                                <td class="px-4 py-3 text-center">4.5</td>
+                                <td class="px-4 py-3 text-center"><span class="px-2 py-1 text-xs font-medium text-green-800 bg-green-100 rounded-full">Optimal</span></td>
+                            </tr>
+                            <tr class="border-b border-slate-200">
+                                <td class="px-4 py-3 font-medium">Delhi-NCR Hub</td>
+                                <td class="px-4 py-3 text-center">
+                                    <div class="w-full bg-slate-200 rounded-full h-2.5"><div class="bg-yellow-500 h-2.5 rounded-full" style="width: 96%"></div></div>
+                                    <span class="text-xs">96%</span>
+                                </td>
+                                <td class="px-4 py-3 text-center">98,000</td>
+                                <td class="px-4 py-3 text-center">6.2</td>
+                                <td class="px-4 py-3 text-center"><span class="px-2 py-1 text-xs font-medium text-yellow-800 bg-yellow-100 rounded-full">High Traffic</span></td>
+                            </tr>
+                            <tr class="border-b border-slate-200">
+                                <td class="px-4 py-3 font-medium">Bengaluru South DC</td>
+                                <td class="px-4 py-3 text-center">
+                                    <div class="w-full bg-slate-200 rounded-full h-2.5"><div class="bg-blue-500 h-2.5 rounded-full" style="width: 85%"></div></div>
+                                    <span class="text-xs">85%</span>
+                                </td>
+                                <td class="px-4 py-3 text-center">85,000</td>
+                                <td class="px-4 py-3 text-center">3.8</td>
+                                <td class="px-4 py-3 text-center"><span class="px-2 py-1 text-xs font-medium text-green-800 bg-green-100 rounded-full">Optimal</span></td>
+                            </tr>
+                            <tr>
+                                <td class="px-4 py-3 font-medium">Kolkata East Hub</td>
+                                <td class="px-4 py-3 text-center">
+                                    <div class="w-full bg-slate-200 rounded-full h-2.5"><div class="bg-red-500 h-2.5 rounded-full" style="width: 99%"></div></div>
+                                    <span class="text-xs">99%</span>
+                                </td>
+                                <td class="px-4 py-3 text-center">1,10,000</td>
+                                <td class="px-4 py-3 text-center">7.1</td>
+                                <td class="px-4 py-3 text-center"><span class="px-2 py-1 text-xs font-medium text-red-800 bg-red-100 rounded-full">At Capacity</span></td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </main>
+        
+        <footer class="text-center text-slate-500 mt-8 text-sm">
+            <p>Confidential: For Internal Executive Use Only. Data is illustrative.</p>
+        </footer>
+    </div>
+
+    <script>
+        // Initialize Lucide Icons
+        lucide.createIcons();
+
+        // Update time and date
+        function updateTime() {
+            const now = new Date();
+            document.getElementById('current-time').textContent = now.toLocaleString('en-IN', {
+                dateStyle: 'full',
+                timeStyle: 'short'
+            });
+            document.getElementById('market-cap-date').textContent = now.toLocaleDateString('en-IN', {
+                day: '2-digit',
+                month: 'short',
+                year: 'numeric'
+            });
+        }
+        updateTime();
+        setInterval(updateTime, 60000); // Update every minute
+
+        const chartTextColor = '#475569'; // Slate-600
+        const chartGridColor = 'rgba(226, 232, 240, 0.8)'; // Slate-200 with opacity
+
+        // Chart: Inventory Distribution
+        const inventoryCtx = document.getElementById('inventoryDistributionChart').getContext('2d');
+        new Chart(inventoryCtx, {
+            type: 'doughnut',
+            data: {
+                labels: ['Electronics', 'Apparel', 'Groceries', 'Home Goods', 'FMCG'],
+                datasets: [{
+                    label: 'Inventory Value',
+                    data: [35, 25, 15, 15, 10],
+                    backgroundColor: [
+                        '#00A3E0', // Reliance Blue
+                        '#60a5fa', // Blue 400
+                        '#94a3b8', // Slate 400
+                        '#cbd5e1', // Slate 300
+                        '#e2e8f0'  // Slate 200
+                    ],
+                    borderColor: '#ffffff',
+                    borderWidth: 4
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        position: 'right',
+                        labels: {
+                            color: chartTextColor,
+                            boxWidth: 20,
+                            padding: 20
+                        }
+                    },
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                return ` ${context.label}: ${context.raw}%`;
+                            }
+                        }
+                    }
+                },
+                cutout: '60%'
+            }
+        });
+
+        // Chart: Warehouse Throughput
+        const throughputCtx = document.getElementById('warehouseThroughputChart').getContext('2d');
+        const gradient = throughputCtx.createLinearGradient(0, 0, 0, 300);
+        gradient.addColorStop(0, 'rgba(0, 163, 224, 0.3)');
+        gradient.addColorStop(1, 'rgba(0, 163, 224, 0)');
+
+        new Chart(throughputCtx, {
+            type: 'line',
+            data: {
+                labels: ['Wk 1', 'Wk 2', 'Wk 3', 'Wk 4', 'Wk 5', 'Wk 6', 'Wk 7', 'Wk 8'],
+                datasets: [{
+                    label: 'Units Processed (in thousands)',
+                    data: [450, 480, 510, 490, 530, 550, 580, 560],
+                    borderColor: '#00A3E0',
+                    borderWidth: 2,
+                    pointBackgroundColor: '#00A3E0',
+                    pointBorderColor: '#ffffff',
+                    pointHoverRadius: 7,
+                    tension: 0.4,
+                    fill: {
+                        target: 'origin',
+                        above: gradient,
+                    }
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        display: false
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: false,
+                        ticks: { color: chartTextColor,
+                            callback: function(value) {
+                                return value + 'k';
+                            }
+                        },
+                        grid: { color: chartGridColor }
+                    },
+                    x: {
+                        ticks: { color: chartTextColor },
+                        grid: { color: chartGridColor }
+                    }
+                }
+            }
+        });
+
+        // Chart: Logistics Costs
+        const logisticsCtx = document.getElementById('logisticsCostsChart').getContext('2d');
+        new Chart(logisticsCtx, {
+            type: 'bar',
+            data: {
+                labels: ['Q1 FY24', 'Q2 FY24', 'Q3 FY24', 'Q4 FY24'],
+                datasets: [
+                {
+                    label: 'Transportation',
+                    data: [120, 125, 140, 135],
+                    backgroundColor: '#00A3E0', // Reliance Blue
+                    borderRadius: 4
+                }, {
+                    label: 'Warehousing',
+                    data: [80, 82, 85, 88],
+                    backgroundColor: '#60a5fa', // Blue 400
+                    borderRadius: 4
+                }, {
+                    label: 'Last-Mile Delivery',
+                    data: [95, 105, 115, 110],
+                    backgroundColor: '#94a3b8', // Slate 400
+                    borderRadius: 4
+                }, {
+                    label: 'Labor',
+                    data: [60, 62, 65, 68],
+                    backgroundColor: '#cbd5e1', // Slate 300
+                    borderRadius: 4
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        position: 'top',
+                        align: 'end',
+                        labels: {
+                            color: chartTextColor
+                        }
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        stacked: true,
+                        ticks: { 
+                            color: chartTextColor,
+                            callback: function(value) {
+                                return '₹' + value;
+                            }
+                        },
+                        grid: { color: chartGridColor }
+                    },
+                    x: {
+                        stacked: true,
+                        ticks: { color: chartTextColor },
+                        grid: { display: false }
+                    }
+                },
+                interaction: {
+                    mode: 'index',
+                    intersect: false
+                }
+            }
+        });
+
+    </script>
+</body>
+</html>
+
