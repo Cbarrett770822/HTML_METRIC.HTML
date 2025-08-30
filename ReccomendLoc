@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Product Slotting Recommendation Report</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+        .recommendation-card {
+            transition: all 0.2s ease-in-out;
+        }
+    </style>
+</head>
+<body class="bg-white text-black min-h-screen flex items-center justify-center p-4">
+
+    <div class="w-full max-w-4xl mx-auto bg-white rounded-2xl shadow-2xl border border-gray-200 p-6 md:p-8">
+        <div>
+            <!-- Recommendation Report -->
+            <div class="space-y-4">
+                 <h2 class="text-xl md:text-2xl font-bold text-gray-800 mb-4">Product location recommendations (ML)</h2>
+                 <div id="recommendation-report" class="space-y-4 max-h-[70vh] overflow-y-auto pr-2">
+                    <!-- Recommendations will be dynamically inserted here -->
+                 </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // --- DATA SIMULATION ---
+            // Added 'velocity' to simulate sales speed.
+            const products = [
+                { id: 1, name: 'Shampoo', velocity: 'medium' },
+                { id: 2, name: 'Conditioner', velocity: 'medium' },
+                { id: 3, name: 'Hair Gel', velocity: 'low' },
+                { id: 4, name: 'Toothpaste', velocity: 'high' },
+                { id: 5, name: 'Toothbrush', velocity: 'high' },
+                { id: 6, name: 'Mouthwash', velocity: 'medium' },
+                { id: 7, name: 'Body Wash', velocity: 'high' },
+                { id: 8, name: 'Loofah', velocity: 'medium' },
+                { id: 9, name: 'Bar Soap', velocity: 'medium' },
+                { id: 10, name: 'Cereal', velocity: 'high' },
+                { id: 11, name: 'Milk (UHT)', velocity: 'high' },
+                { id: 12, name: 'Coffee', velocity: 'high' },
+                { id: 13, name: 'Sugar', velocity: 'medium' },
+                { id: 14, name: 'Tea Bags', velocity: 'low' },
+                { id: 15, name: 'Chips', velocity: 'high' },
+                { id: 16, name: 'Soda', velocity: 'high' },
+                { id: 17, name: 'Cookies', velocity: 'medium' },
+                { id: 18, name: 'Paper Towels', velocity: 'high' },
+                { id: 19, name: 'Cleaning Spray', velocity: 'medium' },
+                { id: 20, name: 'Sponges', velocity: 'low' },
+            ];
+
+            const orderHistory = [
+                [1, 2, 3], [1, 2], [4, 5], [4, 5, 6], [7, 8, 18], [10, 11], [10, 11], [10, 11],
+                [12, 13], [12, 13, 11], [15, 16], [15, 16, 17], [18, 19, 20], [1, 2, 8], [7, 8]
+            ];
+            
+            // --- DOM ELEMENTS ---
+            const recommendationReportEl = document.getElementById('recommendation-report');
+
+            // --- CORE LOGIC ---
+            function generateSlottingRecommendations() {
+                // In a real system, a complex algorithm would live here.
+                // This simulation assigns co-shipped items to adjacent "hot zone" locations
+                // closest to the outbound dock (assumed to be the 'A' aisle).
+                const recommendations = [
+                    {
+                        productIds: [10, 11],
+                        reason: "Highest Frequency & High Velocity",
+                        locations: ["A-1", "A-2"],
+                    },
+                    {
+                        productIds: [15, 16],
+                        reason: "High Frequency & High Velocity",
+                        locations: ["B-3", "B-4"],
+                    },
+                     {
+                        productIds: [4, 5],
+                        reason: "High Frequency & High Velocity",
+                        locations: ["C-5", "C-6"],
+                    },
+                    {
+                        productIds: [1, 2],
+                        reason: "High Frequency & Medium Velocity",
+                        locations: ["D-7", "D-8"],
+                    },
+                    {
+                        productIds: [18, 19],
+                        reason: "Good Frequency & High Velocity",
+                        locations: ["E-9", "E-10"],
+                    },
+                    {
+                        productIds: [7, 8],
+                        reason: "Good Frequency & High Velocity",
+                        locations: ["F-12", "F-13"],
+                    }
+                ];
+                return recommendations;
+            }
+
+            // --- RENDER FUNCTIONS ---
+            function renderReport(recommendations) {
+                recommendationReportEl.innerHTML = '';
+                recommendations.forEach(rec => {
+                    const productsInGroup = rec.productIds.map(id => products.find(p => p.id === id));
+                    
+                    const productListHTML = productsInGroup.map((p, index) => {
+                        const assignedLocation = rec.locations[index] || 'N/A';
+                        return `
+                        <li class="flex items-center justify-between text-sm py-2 border-t border-gray-200">
+                           <div class="flex items-center space-x-3">
+                               <span class="w-2 h-2 rounded-full bg-gray-400"></span>
+                               <span class="text-gray-700">${p.name} <span class="text-xs text-gray-500 capitalize">(${p.velocity} Velocity)</span></span>
+                           </div>
+                           <span class="font-mono text-indigo-700 bg-indigo-100 px-2 py-0.5 rounded">${assignedLocation}</span>
+                        </li>
+                    `}).join('');
+
+                    const card = document.createElement('div');
+                    card.className = 'recommendation-card bg-white p-4 rounded-lg border-2 border-gray-200';
+                    card.innerHTML = `
+                        <div class="flex justify-between items-start mb-2">
+                             <div>
+                                <h3 class="font-bold text-base text-gray-900">Suggested Adjacent Locations</h3>
+                                <p class="text-xs text-blue-800 bg-blue-100 inline-block px-2 py-1 rounded-md mt-1">${rec.reason}</p>
+                             </div>
+                        </div>
+                        <ul class="mt-3 space-y-1">
+                            <li class="flex items-center justify-between text-xs text-gray-500 font-semibold px-1">
+                                <span>PRODUCT</span>
+                                <span>SUGGESTED BIN</span>
+                            </li>
+                            ${productListHTML}
+                        </ul>
+                    `;
+                    recommendationReportEl.appendChild(card);
+                });
+            }
+
+            // --- INITIALIZATION ---
+            function initialize() {
+                const recommendations = generateSlottingRecommendations();
+                renderReport(recommendations);
+            }
+
+            initialize();
+        });
+    </script>
+</body>
+</html>
+
