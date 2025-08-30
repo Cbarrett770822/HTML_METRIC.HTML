@@ -1,0 +1,293 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Facility Review Report</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f8fafc; /* light gray background */
+        }
+        .kpi-card {
+            border-left-width: 4px;
+        }
+        .kpi-good { border-color: #22c55e; } /* green */
+        .kpi-warning { border-color: #f59e0b; } /* amber */
+        .kpi-danger { border-color: #ef4444; } /* red */
+
+        .genai-summary {
+            background: linear-gradient(to right, rgb(237, 242, 247), rgb(247, 250, 252));
+            border: 1px solid #e2e8f0;
+        }
+    </style>
+</head>
+<body class="text-gray-800">
+
+    <div class="w-full max-w-4xl mx-auto p-4 md:p-8">
+        <header class="mb-6">
+            <h1 class="text-3xl md:text-4xl font-bold text-gray-900">Facility Performance Review</h1>
+            <p class="text-xl text-gray-700 mt-2">Welcome, Charles Barrett.</p>
+            <p class="text-md text-gray-600 mt-1">Select a facility to view its GenAI-powered performance analysis.</p>
+        </header>
+
+        <!-- Facility Selector -->
+        <div class="mb-8">
+            <label for="facility-selector" class="block text-sm font-medium text-gray-700 mb-2">Select Facility:</label>
+            <select id="facility-selector" class="block w-full p-3 bg-white border border-gray-300 rounded-lg shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition">
+                <!-- Options will be dynamically populated here -->
+            </select>
+        </div>
+
+        <main id="report-container">
+            <!-- Selected Facility Report will be dynamically generated here -->
+        </main>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // --- DATA SIMULATION ---
+            const facilitiesData = [
+                {
+                    name: "F10N",
+                    location: "Singapore",
+                    kpis: { "Order Fulfillment Rate": 99.5, "Inventory Accuracy": 99.8, "Receiving Efficiency": 88.1, "On-Time Shipping": 99.1 },
+                    snapshot: {
+                        inbound: { "Dock-to-Stock": "4.5h", "ASN Accuracy": "99.1%" },
+                        outbound: { "Avg. Pick Time": "3.2m", "Shipped Today": "8,921" },
+                        inventory: { "Cycle Count Acc.": "99.9%", "Stockouts (Wk)": "3" }
+                    },
+                    genAISummary: "F10N is a top-tier performer in fulfillment and inventory control. However, Receiving Efficiency is a notable bottleneck at 88.1%, suggesting inbound processes are not keeping pace with outbound excellence. This could risk stock availability during peak seasons."
+                },
+                {
+                    name: "F10A",
+                    location: "Singapore",
+                    kpis: { "Order Fulfillment Rate": 98.2, "Inventory Accuracy": 97.5, "Receiving Efficiency": 95.4, "On-Time Shipping": 98.9 },
+                     snapshot: {
+                        inbound: { "Dock-to-Stock": "6.1h", "ASN Accuracy": "97.3%" },
+                        outbound: { "Avg. Pick Time": "4.8m", "Shipped Today": "6,540" },
+                        inventory: { "Cycle Count Acc.": "98.0%", "Stockouts (Wk)": "12" }
+                    },
+                    genAISummary: "A solid, well-rounded facility. The primary area for improvement is Inventory Accuracy (97.5%), which could be enhanced with more frequent cycle counts to reduce picking errors and improve overall efficiency."
+                },
+                {
+                    name: "WHSE-003",
+                    location: "Chicago, IL",
+                    kpis: { "Order Fulfillment Rate": 92.2, "Inventory Accuracy": 99.5, "Receiving Efficiency": 93.3, "On-Time Shipping": 94.1 },
+                    snapshot: {
+                        inbound: { "Dock-to-Stock": "7.5h", "ASN Accuracy": "99.5%" },
+                        outbound: { "Avg. Pick Time": "8.9m", "Shipped Today": "11,305" },
+                        inventory: { "Cycle Count Acc.": "99.7%", "Stockouts (Wk)": "25" }
+                    },
+                    genAISummary: "WHSE-003 maintains exceptional inventory accuracy. This is contrasted by a struggling Order Fulfillment Rate of 92.2%. The high average pick time suggests that while stock is well-managed, the picking processes are inefficient, leading to delays."
+                },
+                {
+                    name: "JAKARTA",
+                    location: "Jakarta, ID",
+                    kpis: { "Order Fulfillment Rate": 96.5, "Inventory Accuracy": 98.9, "Receiving Efficiency": 99.2, "On-Time Shipping": 89.4 },
+                    snapshot: {
+                        inbound: { "Dock-to-Stock": "5.0h", "ASN Accuracy": "99.8%" },
+                        outbound: { "Avg. Pick Time": "5.1m", "Shipped Today": "4,112" },
+                        inventory: { "Cycle Count Acc.": "99.0%", "Stockouts (Wk)": "8" }
+                    },
+                    genAISummary: "The Jakarta facility excels at processing inbound goods. The critical issue lies with On-Time Shipping, which is significantly low at 89.4%. This indicates that while the warehouse is efficient internally, last-mile logistics and local traffic are severely impacting delivery timelines."
+                },
+                {
+                    name: "BALI",
+                    location: "Denpasar, ID",
+                    kpis: { "Order Fulfillment Rate": 97.8, "Inventory Accuracy": 99.6, "Receiving Efficiency": 94.1, "On-Time Shipping": 98.2 },
+                    snapshot: {
+                        inbound: { "Dock-to-Stock": "6.8h", "ASN Accuracy": "98.5%" },
+                        outbound: { "Avg. Pick Time": "4.5m", "Shipped Today": "1,890" },
+                        inventory: { "Cycle Count Acc.": "99.7%", "Stockouts (Wk)": "2" }
+                    },
+                    genAISummary: "Bali operates as a highly accurate and reliable facility, likely handling lower-velocity goods. All KPIs are strong, with Inventory Accuracy being a standout. The facility's scalability for higher-volume operations may need to be assessed for future growth."
+                },
+                {
+                    name: "Fliway",
+                    location: "Auckland, NZ",
+                    kpis: { "Order Fulfillment Rate": 99.1, "Inventory Accuracy": 96.1, "Receiving Efficiency": 91.5, "On-Time Shipping": 99.6 },
+                    snapshot: {
+                        inbound: { "Dock-to-Stock": "8.2h", "ASN Accuracy": "95.5%" },
+                        outbound: { "Avg. Pick Time": "5.3m", "Shipped Today": "3,450" },
+                        inventory: { "Cycle Count Acc.": "96.5%", "Stockouts (Wk)": "31" }
+                    },
+                    genAISummary: "Fliway's On-Time Shipping is nearly flawless. This is undermined by a low Inventory Accuracy of 96.1%, reflected in the high number of weekly stockouts. The risk of mis-picks is high, and improving stock control should be the top priority."
+                },
+                {
+                    name: "WHSE-007",
+                    location: "Los Angeles, CA",
+                    kpis: { "Order Fulfillment Rate": 89.2, "Inventory Accuracy": 92.5, "Receiving Efficiency": 78.0, "On-Time Shipping": 90.1 },
+                    snapshot: {
+                        inbound: { "Dock-to-Stock": "14.3h", "ASN Accuracy": "91.2%" },
+                        outbound: { "Avg. Pick Time": "11.2m", "Shipped Today": "14,833" },
+                        inventory: { "Cycle Count Acc.": "93.1%", "Stockouts (Wk)": "88" }
+                    },
+                    genAISummary: "WHSE-007 is underperforming across the board. Receiving Efficiency is critically low at 78.0%, creating a significant backlog that impacts all other metrics. The extremely high number of stockouts points to a systemic inventory management failure. This facility requires immediate process overhaul."
+                },
+                {
+                    name: "Tokyo",
+                    location: "Tokyo, JP",
+                    kpis: { "Order Fulfillment Rate": 99.9, "Inventory Accuracy": 100.0, "Receiving Efficiency": 98.9, "On-Time Shipping": 99.8 },
+                    snapshot: {
+                        inbound: { "Dock-to-Stock": "2.1h", "ASN Accuracy": "100.0%" },
+                        outbound: { "Avg. Pick Time": "2.8m", "Shipped Today": "10,500" },
+                        inventory: { "Cycle Count Acc.": "100.0%", "Stockouts (Wk)": "0" }
+                    },
+                    genAISummary: "The Tokyo facility represents the pinnacle of operational excellence, with perfect or near-perfect scores. Its 100% inventory accuracy is a benchmark for the enterprise. The focus here should be on knowledge transfer, using this facility's best practices as a model for others."
+                },
+                {
+                    name: "XTXT-WH01",
+                    location: "Dallas, TX",
+                    kpis: { "Order Fulfillment Rate": 98.9, "Inventory Accuracy": 99.2, "Receiving Efficiency": 99.1, "On-Time Shipping": 98.7 },
+                    snapshot: {
+                        inbound: { "Dock-to-Stock": "3.9h", "ASN Accuracy": "99.4%" },
+                        outbound: { "Avg. Pick Time": "4.1m", "Shipped Today": "12,100" },
+                        inventory: { "Cycle Count Acc.": "99.3%", "Stockouts (Wk)": "5" }
+                    },
+                    genAISummary: "A high-performing and balanced facility. XTXT-WH01 demonstrates strong capabilities across all key metrics, making it a reliable and crucial node in the supply chain network. Continued investment in automation could push its already excellent numbers even higher."
+                },
+                {
+                    name: "Bangkok",
+                    location: "Bangkok, TH",
+                    kpis: { "Order Fulfillment Rate": 95.2, "Inventory Accuracy": 97.1, "Receiving Efficiency": 96.8, "On-Time Shipping": 94.3 },
+                    snapshot: {
+                        inbound: { "Dock-to-Stock": "7.2h", "ASN Accuracy": "98.1%" },
+                        outbound: { "Avg. Pick Time": "7.9m", "Shipped Today": "3,980" },
+                        inventory: { "Cycle Count Acc.": "97.5%", "Stockouts (Wk)": "19" }
+                    },
+                    genAISummary: "Bangkok shows good efficiency with inbound goods but struggles with fulfillment and on-time shipping. This pattern suggests that internal warehouse processes and external logistics are challenged, possibly due to facility layout or urban congestion."
+                },
+                {
+                    name: "Kuala Lumpur",
+                    location: "Kuala Lumpur, MY",
+                    kpis: { "Order Fulfillment Rate": 98.5, "Inventory Accuracy": 99.3, "Receiving Efficiency": 97.4, "On-Time Shipping": 98.9 },
+                     snapshot: {
+                        inbound: { "Dock-to-Stock": "4.8h", "ASN Accuracy": "99.5%" },
+                        outbound: { "Avg. Pick Time": "4.6m", "Shipped Today": "5,620" },
+                        inventory: { "Cycle Count Acc.": "99.4%", "Stockouts (Wk)": "7" }
+                    },
+                    genAISummary: "The Kuala Lumpur facility is a strong, modern performer with excellent metrics. It balances high throughput with accuracy effectively. The focus should be on maintaining these high standards through continuous improvement programs and staff training."
+                }
+            ];
+
+            const reportContainer = document.getElementById('report-container');
+            const facilitySelector = document.getElementById('facility-selector');
+
+            // --- RENDER FUNCTIONS ---
+            function populateSelector() {
+                facilitiesData.forEach((facility, index) => {
+                    const option = document.createElement('option');
+                    option.value = index;
+                    option.textContent = facility.name;
+                    facilitySelector.appendChild(option);
+                });
+            }
+
+            function renderReport(facilityIndex) {
+                const facility = facilitiesData[facilityIndex];
+                if (!facility) {
+                    reportContainer.innerHTML = '<p class="text-center text-gray-500">Please select a facility to view its report.</p>';
+                    return;
+                }
+
+                const kpiHTML = Object.entries(facility.kpis).map(([key, value]) => {
+                    let borderColorClass = 'kpi-good';
+                    if (value < 97 && value >= 90) borderColorClass = 'kpi-warning';
+                    if (value < 90) borderColorClass = 'kpi-danger';
+                    
+                    return `
+                        <div class="kpi-card ${borderColorClass} bg-white p-4 rounded-lg shadow-sm">
+                            <p class="text-sm text-gray-600">${key}</p>
+                            <p class="text-2xl font-bold text-gray-900">${value}%</p>
+                        </div>
+                    `;
+                }).join('');
+
+                const snapshot = facility.snapshot;
+                const snapshotHTML = `
+                    <div class="mt-8">
+                        <h3 class="text-lg font-semibold text-gray-800 mb-3">Current Operational Snapshot</h3>
+                        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                            <!-- Inbound Card -->
+                            <div class="bg-gray-50 p-4 rounded-lg border">
+                                <h4 class="font-bold text-blue-600 mb-2">Inbound</h4>
+                                <div class="space-y-2 text-sm">
+                                    <div class="flex justify-between"><span>Dock-to-Stock:</span> <span class="font-semibold">${snapshot.inbound['Dock-to-Stock']}</span></div>
+                                    <div class="flex justify-between"><span>ASN Accuracy:</span> <span class="font-semibold">${snapshot.inbound['ASN Accuracy']}</span></div>
+                                </div>
+                            </div>
+                            <!-- Outbound Card -->
+                            <div class="bg-gray-50 p-4 rounded-lg border">
+                                <h4 class="font-bold text-green-600 mb-2">Outbound</h4>
+                                <div class="space-y-2 text-sm">
+                                    <div class="flex justify-between"><span>Avg. Pick Time:</span> <span class="font-semibold">${snapshot.outbound['Avg. Pick Time']}</span></div>
+                                    <div class="flex justify-between"><span>Shipped Today:</span> <span class="font-semibold">${snapshot.outbound['Shipped Today']}</span></div>
+                                </div>
+                            </div>
+                            <!-- Inventory Card -->
+                            <div class="bg-gray-50 p-4 rounded-lg border">
+                                <h4 class="font-bold text-purple-600 mb-2">Inventory Management</h4>
+                                <div class="space-y-2 text-sm">
+                                    <div class="flex justify-between"><span>Cycle Count Acc.:</span> <span class="font-semibold">${snapshot.inventory['Cycle Count Acc.']}</span></div>
+                                    <div class="flex justify-between"><span>Stockouts (Wk):</span> <span class="font-semibold">${snapshot.inventory['Stockouts (Wk)']}</span></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+
+                const facilityCard = `
+                    <section class="bg-white border border-gray-200 rounded-xl shadow-lg p-6">
+                        <div class="md:flex justify-between items-start">
+                            <div>
+                                <h2 class="text-2xl font-bold text-gray-900">${facility.name}</h2>
+                                <p class="text-md text-gray-500">${facility.location}</p>
+                            </div>
+                            <p class="mt-2 md:mt-0 text-sm font-semibold text-gray-600 bg-gray-100 px-3 py-1 rounded-full">PERFORMANCE SNAPSHOT</p>
+                        </div>
+
+                        ${snapshotHTML}
+
+                        <div class="mt-8">
+                            <h3 class="text-lg font-semibold text-gray-800 mb-3">Key Performance Indicators</h3>
+                            <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+                                ${kpiHTML}
+                            </div>
+                        </div>
+
+                        <div class="mt-8">
+                            <h3 class="text-lg font-semibold text-gray-800 mb-2 flex items-center">
+                                <i class="fas fa-brain text-blue-500 mr-2"></i>
+                                GenAI Performance Analysis
+                            </h3>
+                            <div class="genai-summary p-4 rounded-lg">
+                                <p class="text-gray-700 leading-relaxed">${facility.genAISummary}</p>
+                            </div>
+                        </div>
+                    </section>
+                `;
+                reportContainer.innerHTML = facilityCard;
+            }
+
+            // --- EVENT LISTENERS ---
+            facilitySelector.addEventListener('change', (event) => {
+                renderReport(event.target.value);
+            });
+
+            // --- INITIALIZATION ---
+            function initialize() {
+                populateSelector();
+                renderReport(0); // Render the first facility by default
+            }
+
+            initialize();
+        });
+    </script>
+
+</body>
+</html>
+
