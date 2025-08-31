@@ -125,6 +125,100 @@
                     </div>
                 </div>
 
+                <!-- KPI Card: Inbound Metrics -->
+                <div class="col-span-1 md:col-span-2 lg:col-span-2 bg-white rounded-lg shadow p-6">
+                    <div class="flex justify-between items-center mb-4">
+                        <h3 class="text-lg font-semibold text-gray-800">Inbound Metrics</h3>
+                    </div>
+                    <div class="grid grid-cols-2 gap-4 pt-4">
+                        <div class="bg-blue-50 p-4 rounded-lg shadow-sm">
+                            <span class="text-sm text-gray-600">Receiving Accuracy</span>
+                            <span class="block font-bold text-2xl text-gray-800">99.8%</span>
+                        </div>
+                        <div class="bg-blue-50 p-4 rounded-lg shadow-sm">
+                            <span class="text-sm text-gray-600">Dock-to-Stock Time</span>
+                            <span class="block font-bold text-2xl text-gray-800">4.2 <span class="text-base font-medium">Hrs</span></span>
+                        </div>
+                        <div class="bg-blue-50 p-4 rounded-lg shadow-sm">
+                            <span class="text-sm text-gray-600">Goods Damaged Rate</span>
+                            <span class="block font-bold text-2xl text-gray-800">0.5%</span>
+                        </div>
+                        <div class="bg-blue-50 p-4 rounded-lg shadow-sm">
+                            <span class="text-sm text-gray-600">POs Processed Today</span>
+                            <span class="block font-bold text-2xl text-gray-800">125</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- KPI Card: Outbound Metrics -->
+                <div class="col-span-1 md:col-span-2 lg:col-span-2 bg-white rounded-lg shadow p-6">
+                    <div class="flex justify-between items-center mb-4">
+                        <h3 class="text-lg font-semibold text-gray-800">Outbound Metrics</h3>
+                    </div>
+                    <div class="grid grid-cols-2 gap-4 pt-4">
+                         <div class="bg-indigo-50 p-4 rounded-lg shadow-sm">
+                            <span class="text-sm text-gray-600">Order Picking Accuracy</span>
+                            <span class="block font-bold text-2xl text-gray-800">99.5%</span>
+                        </div>
+                         <div class="bg-indigo-50 p-4 rounded-lg shadow-sm">
+                            <span class="text-sm text-gray-600">On-Time Shipping Rate</span>
+                            <span class="block font-bold text-2xl text-gray-800">98.2%</span>
+                        </div>
+                         <div class="bg-indigo-50 p-4 rounded-lg shadow-sm">
+                            <span class="text-sm text-gray-600">Avg. Order Cycle Time</span>
+                            <span class="block font-bold text-2xl text-gray-800">8.5 <span class="text-base font-medium">Hrs</span></span>
+                        </div>
+                         <div class="bg-indigo-50 p-4 rounded-lg shadow-sm">
+                            <span class="text-sm text-gray-600">Orders Shipped Today</span>
+                            <span class="block font-bold text-2xl text-gray-800">432</span>
+                        </div>
+                    </div>
+                </div>
+
+                 <!-- KPI Card: ASN Status -->
+                <div class="col-span-1 md:col-span-1 lg:col-span-2 bg-white rounded-lg shadow p-6">
+                    <div class="flex justify-between items-center mb-4">
+                        <h3 class="text-lg font-semibold text-gray-800">ASN Status</h3>
+                         <button class="expand-btn" data-chart-id="asnStatusChart">Expand</button>
+                    </div>
+                    <div class="h-64 flex items-center justify-center">
+                         <canvas id="asnStatusChart"></canvas>
+                    </div>
+                </div>
+
+                <!-- KPI Card: Shipment Order Status -->
+                <div class="col-span-1 md:col-span-1 lg:col-span-2 bg-white rounded-lg shadow p-6">
+                    <div class="flex justify-between items-center mb-4">
+                        <h3 class="text-lg font-semibold text-gray-800">Shipment Order Status</h3>
+                         <button class="expand-btn" data-chart-id="shipmentOrderStatusChart">Expand</button>
+                    </div>
+                    <div class="h-64 flex items-center justify-center">
+                         <canvas id="shipmentOrderStatusChart"></canvas>
+                    </div>
+                </div>
+
+                <!-- KPI Card: Current Picking Status by Wave -->
+                <div class="col-span-1 md:col-span-2 lg:col-span-2 bg-white rounded-lg shadow p-6">
+                    <div class="flex justify-between items-center mb-4">
+                        <h3 class="text-lg font-semibold text-gray-800">Current Picking Status by Wave</h3>
+                        <button class="expand-btn" data-chart-id="pickingStatusChart">Expand</button>
+                    </div>
+                    <div class="h-64">
+                        <canvas id="pickingStatusChart"></canvas>
+                    </div>
+                </div>
+
+                <!-- KPI Card: Loading Status by Load -->
+                <div class="col-span-1 md:col-span-2 lg:col-span-2 bg-white rounded-lg shadow p-6">
+                    <div class="flex justify-between items-center mb-4">
+                        <h3 class="text-lg font-semibold text-gray-800">Loading Status by Load</h3>
+                        <button class="expand-btn" data-chart-id="loadingStatusChart">Expand</button>
+                    </div>
+                    <div class="h-64">
+                        <canvas id="loadingStatusChart"></canvas>
+                    </div>
+                </div>
+
             </div>
         </main>
     </div>
@@ -304,6 +398,114 @@
         };
         chartConfigs['cycleCountSummaryChart'] = cycleCountSummaryConfig;
         new Chart(cycleCountSummaryCtx, cycleCountSummaryConfig);
+        
+        // Chart: ASN Status
+        const asnStatusCtx = document.getElementById('asnStatusChart').getContext('2d');
+        const asnStatusConfig = {
+            type: 'pie',
+            data: {
+                labels: ['Received', 'In Transit', 'Pending', 'Cancelled'],
+                datasets: [{
+                    data: [65, 20, 10, 5],
+                    backgroundColor: ['rgba(34, 197, 94, 0.8)', 'rgba(59, 130, 246, 0.8)', 'rgba(249, 115, 22, 0.8)', 'rgba(239, 68, 68, 0.8)'],
+                    borderColor: '#fff',
+                    borderWidth: 2
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: { legend: { position: 'bottom'} }
+            }
+        };
+        chartConfigs['asnStatusChart'] = asnStatusConfig;
+        new Chart(asnStatusCtx, asnStatusConfig);
+
+        // Chart: Shipment Order Status
+        const shipmentOrderStatusCtx = document.getElementById('shipmentOrderStatusChart').getContext('2d');
+        const shipmentOrderStatusConfig = {
+            type: 'pie',
+            data: {
+                labels: ['Delivered', 'Shipped', 'Processing', 'Returned'],
+                datasets: [{
+                    data: [70, 15, 10, 5],
+                    backgroundColor: ['rgba(34, 197, 94, 0.8)', 'rgba(59, 130, 246, 0.8)', 'rgba(249, 115, 22, 0.8)', 'rgba(239, 68, 68, 0.8)'],
+                    borderColor: '#fff',
+                    borderWidth: 2
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: { legend: { position: 'bottom'} }
+            }
+        };
+        chartConfigs['shipmentOrderStatusChart'] = shipmentOrderStatusConfig;
+        new Chart(shipmentOrderStatusCtx, shipmentOrderStatusConfig);
+
+        // Chart: Current Picking Status by Wave
+        const pickingStatusCtx = document.getElementById('pickingStatusChart').getContext('2d');
+        const pickingStatusConfig = {
+            type: 'bar',
+            data: {
+                labels: ['Wave 1', 'Wave 2', 'Wave 3', 'Wave 4', 'Wave 5'],
+                datasets: [
+                    {
+                        label: 'Picked',
+                        data: [80, 60, 95, 40, 100],
+                        backgroundColor: 'rgba(34, 197, 94, 0.7)', // Green
+                    },
+                    {
+                        label: 'Remaining',
+                        data: [20, 40, 5, 60, 0],
+                        backgroundColor: 'rgba(229, 231, 235, 0.7)', // Light Gray
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    x: { stacked: true },
+                    y: { stacked: true, max: 100, ticks: { callback: (v) => v + '%' } }
+                },
+                plugins: { legend: { position: 'bottom'} }
+            }
+        };
+        chartConfigs['pickingStatusChart'] = pickingStatusConfig;
+        new Chart(pickingStatusCtx, pickingStatusConfig);
+
+        // Chart: Loading Status by Load
+        const loadingStatusCtx = document.getElementById('loadingStatusChart').getContext('2d');
+        const loadingStatusConfig = {
+            type: 'bar',
+            data: {
+                labels: ['Load 501', 'Load 502', 'Load 503', 'Load 504', 'Load 505'],
+                 datasets: [
+                    {
+                        label: 'Loaded',
+                        data: [100, 75, 50, 25, 80],
+                        backgroundColor: 'rgba(59, 130, 246, 0.7)', // Blue
+                    },
+                    {
+                        label: 'Remaining',
+                        data: [0, 25, 50, 75, 20],
+                        backgroundColor: 'rgba(229, 231, 235, 0.7)', // Light Gray
+                    }
+                ]
+            },
+             options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    x: { stacked: true },
+                    y: { stacked: true, max: 100, ticks: { callback: (v) => v + '%' } }
+                },
+                plugins: { legend: { position: 'bottom'} }
+            }
+        };
+        chartConfigs['loadingStatusChart'] = loadingStatusConfig;
+        new Chart(loadingStatusCtx, loadingStatusConfig);
 
         // Modal Logic
         const modal = document.getElementById('fullscreen-modal');
