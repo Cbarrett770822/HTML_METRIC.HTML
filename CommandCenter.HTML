@@ -1,0 +1,358 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Warehouse Command Center</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f3f4f6; /* A light gray background */
+        }
+        .expand-btn {
+            background-color: #e5e7eb;
+            color: #374151;
+            padding: 0.25rem 0.75rem;
+            border-radius: 9999px;
+            font-size: 0.75rem;
+            font-weight: 500;
+            transition: background-color 0.2s;
+        }
+        .expand-btn:hover {
+            background-color: #d1d5db;
+        }
+        #close-fullscreen {
+            font-size: 2.5rem;
+            line-height: 1;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body class="bg-gray-100">
+
+    <div id="app" class="flex flex-col h-screen">
+
+        <!-- Main Content -->
+        <main class="flex-1 overflow-y-auto p-4 sm:p-6 lg:p-8">
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+
+                <!-- KPI Card: Warehouse Location Analysis -->
+                <div class="col-span-1 md:col-span-2 lg:col-span-2 bg-white rounded-lg shadow p-6">
+                    <div class="flex justify-between items-center mb-4">
+                        <h3 class="text-lg font-semibold text-gray-800">Warehouse Location Analysis</h3>
+                        <button class="expand-btn" data-chart-id="warehouseLocationChart">Expand</button>
+                    </div>
+                    <div class="h-80">
+                       <canvas id="warehouseLocationChart"></canvas>
+                    </div>
+                </div>
+
+                <!-- KPI Card: Cycle Count Accuracy -->
+                <div class="col-span-1 md:col-span-2 lg:col-span-2 bg-white rounded-lg shadow p-6">
+                    <div class="flex justify-between items-center mb-4">
+                        <h3 class="text-lg font-semibold text-gray-800">Cycle Count Accuracy</h3>
+                        <button class="expand-btn" data-chart-id="cycleCountAccuracyChart">Expand</button>
+                    </div>
+                    <div class="h-64">
+                        <canvas id="cycleCountAccuracyChart"></canvas>
+                    </div>
+                </div>
+
+                <!-- KPI Card: Adjustment Reasons -->
+                <div class="bg-white rounded-lg shadow p-6">
+                    <div class="flex justify-between items-center mb-4">
+                        <h3 class="text-lg font-semibold text-gray-800">Adjustment Reasons</h3>
+                        <button class="expand-btn" data-chart-id="adjustmentReasonsChart">Expand</button>
+                    </div>
+                    <div class="h-56">
+                        <canvas id="adjustmentReasonsChart"></canvas>
+                    </div>
+                </div>
+
+                <!-- KPI Card: Stock On Hold -->
+                <div class="bg-white rounded-lg shadow p-6">
+                    <div class="flex justify-between items-center mb-4">
+                        <h3 class="text-lg font-semibold text-gray-800">Stock On Hold</h3>
+                        <button class="expand-btn" data-content-id="stockOnHoldContent">Expand</button>
+                    </div>
+                     <div id="stockOnHoldContent">
+                         <div class="h-56 flex items-end justify-around text-white text-xs font-semibold">
+                            <div class="w-10 flex flex-col justify-end">
+                                <div class="bg-blue-800 text-center py-1" style="height: 20%;">1</div>
+                                <div class="bg-red-500 text-center py-1" style="height: 10%;"></div>
+                            </div>
+                            <div class="w-10 flex flex-col justify-end">
+                                 <div class="bg-blue-800 text-center py-1" style="height: 60%;">3</div>
+                                <div class="bg-purple-500 text-center py-1" style="height: 30%;">17</div>
+                            </div>
+                             <div class="w-10 flex flex-col justify-end">
+                               <div class="bg-green-500 text-center py-1" style="height: 25%;">8</div>
+                               <div class="bg-gray-400 text-center py-1" style="height: 10%;">2</div>
+                            </div>
+                            <div class="w-10 flex flex-col justify-end">
+                                <div class="bg-blue-800 text-center py-1" style="height: 50%;">2</div>
+                                <div class="bg-orange-400 text-center py-1" style="height: 20%;">8</div>
+                            </div>
+                        </div>
+                        <div class="flex justify-around text-xs text-gray-500 mt-2">
+                            <span>Damaged</span><span>Insp.</span><span>OK</span><span>Other</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- KPI Card: Adjustments by QTY -->
+                <div class="bg-white rounded-lg shadow p-6">
+                    <div class="flex justify-between items-center mb-4">
+                        <h3 class="text-lg font-semibold text-gray-800">Adjustments By QTY</h3>
+                        <button class="expand-btn" data-chart-id="adjustmentsByQtyChart">Expand</button>
+                    </div>
+                    <div class="h-56">
+                       <canvas id="adjustmentsByQtyChart"></canvas>
+                    </div>
+                </div>
+
+                <!-- KPI Card: Cycle Count Summary -->
+                 <div class="bg-white rounded-lg shadow p-6">
+                    <div class="flex justify-between items-center mb-4">
+                        <h3 class="text-lg font-semibold text-gray-800">Cycle Count Summary</h3>
+                        <button class="expand-btn" data-chart-id="cycleCountSummaryChart">Expand</button>
+                    </div>
+                    <div class="h-56">
+                        <canvas id="cycleCountSummaryChart"></canvas>
+                    </div>
+                </div>
+
+            </div>
+        </main>
+    </div>
+
+    <!-- Fullscreen Modal -->
+    <div id="fullscreen-modal" class="fixed inset-0 bg-gray-900 bg-opacity-75 flex items-center justify-center p-4 sm:p-8 z-50 hidden">
+        <div id="fullscreen-content" class="bg-white rounded-lg shadow-xl w-full h-full p-6 relative flex flex-col">
+             <button id="close-fullscreen" class="absolute top-2 right-4 text-gray-500 hover:text-gray-800">&times;</button>
+             <h3 id="fullscreen-title" class="text-xl font-semibold text-gray-800 mb-4"></h3>
+             <div class="flex-1">
+                <!-- Chart canvas or content will be injected here -->
+             </div>
+        </div>
+    </div>
+
+
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        let chartConfigs = {};
+        let activeFullscreenChart = null;
+
+        // Chart: Warehouse Location Analysis
+        const warehouseLocationCtx = document.getElementById('warehouseLocationChart').getContext('2d');
+        const warehouseLocationConfig = {
+            type: 'bar',
+            data: {
+                labels: ['S01 AREA', 'None', 'FACILITY', 'AREA JK', 'AREA I', 'AREAG', 'AREA AF', 'AREA AE', 'AREA AC', 'AREA AD', 'AREA A'],
+                datasets: [
+                    {
+                        label: 'Occupied',
+                        data: [25, 50, 60, 65, 68, 75, 80, 82, 85, 88, 95],
+                        backgroundColor: 'rgba(30, 64, 175, 0.7)', // dark blue
+                        borderWidth: 1
+                    },
+                    {
+                        label: 'Free',
+                        data: [75, 50, 40, 35, 32, 25, 20, 18, 15, 12, 5],
+                        backgroundColor: 'rgba(59, 130, 246, 0.7)', // medium blue
+                        borderWidth: 1
+                    }
+                ]
+            },
+            options: {
+                indexAxis: 'y',
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    x: {
+                        stacked: true,
+                        max: 100, // Total should be 100%
+                        ticks: {
+                            callback: function(value) { return value + '%' }
+                        }
+                    },
+                    y: { stacked: true }
+                },
+                plugins: {
+                    legend: { display: true, position: 'bottom' },
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                let label = context.dataset.label || '';
+                                if (label) { label += ': '; }
+                                if (context.parsed.x !== null) { label += context.parsed.x + '%'; }
+                                return label;
+                            }
+                        }
+                    }
+                }
+            }
+        };
+        chartConfigs['warehouseLocationChart'] = warehouseLocationConfig;
+        new Chart(warehouseLocationCtx, warehouseLocationConfig);
+
+        // Chart: Cycle Count Accuracy
+        const cycleCountAccuracyCtx = document.getElementById('cycleCountAccuracyChart').getContext('2d');
+        const cycleCountAccuracyConfig = {
+            type: 'bar',
+            data: {
+                labels: ['2025-02-23', '2025-02-24', '2025-02-25', '2025-02-26', '2025-01-09'],
+                datasets: [{
+                    label: 'Accuracy',
+                    data: [94.1, 86.8, 90, 100, 100],
+                    backgroundColor: ['rgba(30, 64, 175, 0.7)', 'rgba(30, 64, 175, 0.7)', 'rgba(30, 64, 175, 0.7)', 'rgba(29, 78, 216, 0.7)', 'rgba(29, 78, 216, 0.7)'],
+                    borderColor: ['rgba(30, 64, 175, 1)', 'rgba(30, 64, 175, 1)', 'rgba(30, 64, 175, 1)', 'rgba(29, 78, 216, 1)', 'rgba(29, 78, 216, 1)'],
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    y: {
+                        beginAtZero: false,
+                        min: 80,
+                        ticks: { callback: function(value) { return value + '%' } }
+                    }
+                },
+                plugins: {
+                    legend: { display: false },
+                    tooltip: { callbacks: { label: function(context) { return context.parsed.y + '%'; } } }
+                }
+            }
+        };
+        chartConfigs['cycleCountAccuracyChart'] = cycleCountAccuracyConfig;
+        new Chart(cycleCountAccuracyCtx, cycleCountAccuracyConfig);
+
+        // Chart: Adjustment Reasons
+        const adjustmentReasonsCtx = document.getElementById('adjustmentReasonsChart').getContext('2d');
+        const adjustmentReasonsConfig = {
+            type: 'bar',
+            data: {
+                labels: ['Damaged', 'QC Adj.', 'General', 'Receipt Err.'],
+                datasets: [{
+                    label: 'Count',
+                    data: [525, 21, 1, 80],
+                     backgroundColor: ['rgba(29, 78, 216, 0.7)', 'rgba(37, 99, 235, 0.7)', 'rgba(37, 99, 235, 0.7)', 'rgba(37, 99, 235, 0.7)'],
+                    borderColor: ['rgba(29, 78, 216, 1)', 'rgba(37, 99, 235, 1)', 'rgba(37, 99, 235, 1)', 'rgba(37, 99, 235, 1)'],
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                 scales: { y: { beginAtZero: true } },
+                plugins: { legend: { display: false } }
+            }
+        };
+        chartConfigs['adjustmentReasonsChart'] = adjustmentReasonsConfig;
+        new Chart(adjustmentReasonsCtx, adjustmentReasonsConfig);
+
+        // Chart: Adjustments By QTY
+        const adjustmentsByQtyCtx = document.getElementById('adjustmentsByQtyChart').getContext('2d');
+        const adjustmentsData = [-5, -20, -31, -961, -10000, 20, 5, -5, 1];
+        const adjustmentsByQtyConfig = {
+            type: 'bar',
+            data: {
+                labels: ['25-02', '25-03', '25-04', '25-05', '25-07', '25-08', '25-09', '25-10', '25-12'],
+                datasets: [{
+                    label: 'Quantity',
+                    data: adjustmentsData,
+                    backgroundColor: adjustmentsData.map(v => v < 0 ? 'rgba(239, 68, 68, 0.7)' : 'rgba(34, 197, 94, 0.7)'),
+                    borderColor: adjustmentsData.map(v => v < 0 ? 'rgba(239, 68, 68, 1)' : 'rgba(34, 197, 94, 1)'),
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: { y: { ticks: { callback: function(value) { return value >= 1000 || value <= -1000 ? (value/1000) + 'K' : value; } } } },
+                plugins: { legend: { display: false } }
+            }
+        };
+        chartConfigs['adjustmentsByQtyChart'] = adjustmentsByQtyConfig;
+        new Chart(adjustmentsByQtyCtx, adjustmentsByQtyConfig);
+
+        // Chart: Cycle Count Summary
+        const cycleCountSummaryCtx = document.getElementById('cycleCountSummaryChart').getContext('2d');
+        const cycleCountSummaryConfig = {
+            type: 'bar',
+            data: {
+                labels: ['23-02', '24-02', '25-02', '26-02', '09-01'],
+                datasets: [{
+                    label: 'Count',
+                    data: [1, 2, 2, 1, 1],
+                    backgroundColor: ['rgba(37, 99, 235, 0.7)', 'rgba(29, 78, 216, 0.7)', 'rgba(29, 78, 216, 0.7)', 'rgba(37, 99, 235, 0.7)', 'rgba(37, 99, 235, 0.7)'],
+                    borderColor: ['rgba(37, 99, 235, 1)', 'rgba(29, 78, 216, 1)', 'rgba(29, 78, 216, 1)', 'rgba(37, 99, 235, 1)', 'rgba(29, 78, 216, 1)'],
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: { y: { beginAtZero: true, ticks: { stepSize: 1 } } },
+                plugins: { legend: { display: false } }
+            }
+        };
+        chartConfigs['cycleCountSummaryChart'] = cycleCountSummaryConfig;
+        new Chart(cycleCountSummaryCtx, cycleCountSummaryConfig);
+
+        // Modal Logic
+        const modal = document.getElementById('fullscreen-modal');
+        const modalContent = modal.querySelector('.flex-1');
+        const modalTitle = document.getElementById('fullscreen-title');
+        const closeModalBtn = document.getElementById('close-fullscreen');
+        const expandBtns = document.querySelectorAll('.expand-btn');
+
+        expandBtns.forEach(btn => {
+            btn.addEventListener('click', () => {
+                const chartId = btn.dataset.chartId;
+                const contentId = btn.dataset.contentId;
+                const originalTitle = btn.previousElementSibling.textContent;
+                
+                modalTitle.textContent = originalTitle;
+                modalContent.innerHTML = ''; // Clear previous content
+
+                if (chartId && chartConfigs[chartId]) {
+                    const canvas = document.createElement('canvas');
+                    modalContent.appendChild(canvas);
+                    const ctx = canvas.getContext('2d');
+                    activeFullscreenChart = new Chart(ctx, chartConfigs[chartId]);
+                } else if (contentId) {
+                    const contentToClone = document.getElementById(contentId);
+                    modalContent.innerHTML = contentToClone.outerHTML;
+                }
+
+                modal.classList.remove('hidden');
+            });
+        });
+
+        function closeModal() {
+            modal.classList.add('hidden');
+            if (activeFullscreenChart) {
+                activeFullscreenChart.destroy();
+                activeFullscreenChart = null;
+            }
+            modalContent.innerHTML = '';
+        }
+
+        closeModalBtn.addEventListener('click', closeModal);
+        modal.addEventListener('click', (e) => {
+            if (e.target === modal) {
+                closeModal();
+            }
+        });
+    });
+</script>
+
+</body>
+</html>
+
