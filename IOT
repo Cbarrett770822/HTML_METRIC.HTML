@@ -1,0 +1,409 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Reliance Group - Smart Warehouse IoT Dashboard</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.7.1/chart.min.js"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f0f2f5;
+        }
+        .dashboard-grid {
+            display: grid;
+            gap: 1.5rem;
+            grid-template-columns: repeat(12, 1fr);
+        }
+        .card {
+            background-color: white;
+            border-radius: 0.75rem;
+            box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+            transition: all 0.3s ease-in-out;
+        }
+        .card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
+        }
+        .col-span-1 { grid-column: span 1 / span 1; }
+        .col-span-2 { grid-column: span 2 / span 2; }
+        .col-span-3 { grid-column: span 3 / span 3; }
+        .col-span-4 { grid-column: span 4 / span 4; }
+        .col-span-5 { grid-column: span 5 / span 5; }
+        .col-span-6 { grid-column: span 6 / span 6; }
+        .col-span-7 { grid-column: span 7 / span 7; }
+        .col-span-8 { grid-column: span 8 / span 8; }
+        .col-span-12 { grid-column: span 12 / span 12; }
+
+        @media (max-width: 1024px) {
+            .lg\:col-span-3 { grid-column: span 6 / span 6; }
+            .lg\:col-span-4 { grid-column: span 12 / span 12; }
+            .lg\:col-span-5 { grid-column: span 12 / span 12; }
+            .lg\:col-span-6 { grid-column: span 12 / span 12; }
+            .lg\:col-span-7 { grid-column: span 12 / span 12; }
+            .lg\:col-span-8 { grid-column: span 12 / span 12; }
+        }
+        @media (max-width: 640px) {
+            .sm\:col-span-12 { grid-column: span 12 / span 12; }
+            .dashboard-grid {
+                grid-template-columns: repeat(1, 1fr);
+            }
+        }
+        .blinking-dot {
+            animation: blink 1.5s infinite;
+        }
+        @keyframes blink {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.3; }
+        }
+    </style>
+</head>
+<body class="antialiased">
+    <div class="flex h-screen bg-gray-100">
+        <!-- Main content -->
+        <div class="flex flex-col flex-1 overflow-auto">
+            <main class="p-6">
+                <!-- Stat Cards -->
+                <div class="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4 mb-6">
+                    <div class="card p-5 flex items-center">
+                        <div class="p-3 rounded-full bg-gray-100 text-gray-600">
+                            <i data-lucide="warehouse" class="w-6 h-6"></i>
+                        </div>
+                        <div class="ml-4">
+                            <p class="text-sm text-gray-500">Total Warehouses</p>
+                            <p class="text-2xl font-bold text-gray-800">42</p>
+                        </div>
+                    </div>
+                    <div class="card p-5 flex items-center">
+                        <div class="p-3 rounded-full bg-gray-100 text-gray-600">
+                            <i data-lucide="check-circle" class="w-6 h-6"></i>
+                        </div>
+                        <div class="ml-4">
+                            <p class="text-sm text-gray-500">Overall Efficiency</p>
+                            <p class="text-2xl font-bold text-gray-800" id="overall-efficiency">94.8%</p>
+                        </div>
+                    </div>
+                    <div class="card p-5 flex items-center">
+                        <div class="p-3 rounded-full bg-gray-100 text-gray-600">
+                           <i data-lucide="package-search" class="w-6 h-6"></i>
+                        </div>
+                        <div class="ml-4">
+                            <p class="text-sm text-gray-500">Inventory Accuracy</p>
+                            <p class="text-2xl font-bold text-gray-800" id="inventory-accuracy">99.2%</p>
+                        </div>
+                    </div>
+                    <div class="card p-5 flex items-center">
+                        <div class="p-3 rounded-full bg-red-100 text-red-600">
+                            <i data-lucide="siren" class="w-6 h-6"></i>
+                        </div>
+                        <div class="ml-4">
+                            <p class="text-sm text-gray-500">Live Alerts</p>
+                            <p class="text-2xl font-bold text-gray-800" id="live-alerts">3</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="dashboard-grid">
+                    <!-- Environmental Monitoring -->
+                    <div class="card p-6 col-span-12 lg:col-span-4">
+                        <h2 class="text-lg font-semibold text-gray-700 mb-4">Environmental Monitoring</h2>
+                        <div class="space-y-4">
+                            <div class="p-4 rounded-lg bg-gray-50 border">
+                                <div class="flex justify-between items-center">
+                                    <h3 class="font-semibold text-gray-800">Cold Storage (Mumbai)</h3>
+                                    <span class="px-2 py-1 text-xs font-semibold text-green-800 bg-green-100 rounded-full">Optimal</span>
+                                </div>
+                                <div class="flex justify-around mt-4 text-center">
+                                    <div>
+                                        <p class="text-sm text-gray-500">Temperature</p>
+                                        <p class="text-2xl font-bold text-gray-800" id="temp-cold">-2.1°C</p>
+                                    </div>
+                                    <div>
+                                        <p class="text-sm text-gray-500">Humidity</p>
+                                        <p class="text-2xl font-bold text-gray-800" id="hum-cold">85%</p>
+                                    </div>
+                                </div>
+                            </div>
+                             <div class="p-4 rounded-lg bg-gray-50 border">
+                                <div class="flex justify-between items-center">
+                                    <h3 class="font-semibold text-gray-800">Ambient Zone (Delhi)</h3>
+                                    <span class="px-2 py-1 text-xs font-semibold text-green-800 bg-green-100 rounded-full">Optimal</span>
+                                </div>
+                                <div class="flex justify-around mt-4 text-center">
+                                    <div>
+                                        <p class="text-sm text-gray-500">Temperature</p>
+                                        <p class="text-2xl font-bold text-gray-800" id="temp-ambient">22.5°C</p>
+                                    </div>
+                                    <div>
+                                        <p class="text-sm text-gray-500">Humidity</p>
+                                        <p class="text-2xl font-bold text-gray-800" id="hum-ambient">58%</p>
+                                    </div>
+                                </div>
+                            </div>
+                             <div class="p-4 rounded-lg bg-red-50 border border-red-200">
+                                <div class="flex justify-between items-center">
+                                    <h3 class="font-semibold text-red-800">Pharma Grade (Hyderabad)</h3>
+                                    <span class="px-2 py-1 text-xs font-semibold text-red-800 bg-red-100 rounded-full">Alert</span>
+                                </div>
+                                <div class="flex justify-around mt-4 text-center">
+                                    <div>
+                                        <p class="text-sm text-gray-500">Temperature</p>
+                                        <p class="text-2xl font-bold text-red-600" id="temp-pharma">19.8°C</p>
+                                    </div>
+                                    <div>
+                                        <p class="text-sm text-gray-500">Humidity</p>
+                                        <p class="text-2xl font-bold text-gray-800" id="hum-pharma">42%</p>
+                                    </div>
+                                </div>
+                                <p class="text-xs text-red-600 mt-2 text-center">Temperature is above the 18°C threshold.</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- MHE Utilization -->
+                    <div class="card p-6 col-span-12 lg:col-span-8">
+                         <h2 class="text-lg font-semibold text-gray-700 mb-4">MHE Utilization</h2>
+                         <div class="h-80 flex items-center justify-center">
+                            <canvas id="mheChart"></canvas>
+                        </div>
+                    </div>
+                    
+                    <!-- Live Asset Tracking -->
+                    <div class="card p-6 col-span-12 lg:col-span-8">
+                        <h2 class="text-lg font-semibold text-gray-700 mb-2">Live Asset Tracking (AGVs)</h2>
+                        <div class="border-b border-gray-200">
+                            <nav class="-mb-px flex space-x-6" aria-label="Tabs">
+                                <button class="warehouse-tab whitespace-nowrap py-3 px-1 border-b-2 font-medium text-sm text-gray-800 border-gray-800" data-warehouse="Mumbai">Mumbai</button>
+                                <button class="warehouse-tab whitespace-nowrap py-3 px-1 border-b-2 font-medium text-sm text-gray-500 hover:text-gray-700 hover:border-gray-300 border-transparent" data-warehouse="Delhi">Delhi</button>
+                                <button class="warehouse-tab whitespace-nowrap py-3 px-1 border-b-2 font-medium text-sm text-gray-500 hover:text-gray-700 hover:border-gray-300 border-transparent" data-warehouse="Hyderabad">Hyderabad</button>
+                            </nav>
+                        </div>
+
+                        <div class="overflow-x-auto mt-4">
+                            <table class="w-full text-sm text-left text-gray-500">
+                                <thead class="text-xs text-gray-700 uppercase bg-gray-50">
+                                    <tr>
+                                        <th scope="col" class="px-6 py-3">Asset ID</th>
+                                        <th scope="col" class="px-6 py-3">Location</th>
+                                        <th scope="col" class="px-6 py-3">Status</th>
+                                        <th scope="col" class="px-6 py-3">Battery</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="asset-table">
+                                    <!-- Rows will be injected by JS -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <!-- Recent Alerts -->
+                    <div class="card p-6 col-span-12 lg:col-span-4">
+                         <h2 class="text-lg font-semibold text-gray-700 mb-4">Recent Alerts</h2>
+                         <div class="space-y-3" id="alert-list">
+                            <!-- Alerts will be injected by JS -->
+                         </div>
+                    </div>
+                </div>
+            </main>
+        </div>
+    </div>
+
+<script>
+    lucide.createIcons();
+
+    // Chart.js instances
+    let mheChart;
+
+    // MHE Chart
+    const mheCtx = document.getElementById('mheChart').getContext('2d');
+    mheChart = new Chart(mheCtx, {
+        type: 'doughnut',
+        data: {
+            labels: ['Active', 'Idle', 'Charging', 'Maintenance'],
+            datasets: [{
+                label: 'MHE Status',
+                data: [65, 20, 10, 5],
+                backgroundColor: [
+                    'rgb(59, 130, 246)',    // Blue
+                    'rgb(107, 114, 128)',   // Gray-500
+                    'rgb(156, 163, 175)',   // Gray-400
+                    'rgb(239, 68, 68)'      // Red
+                ],
+                hoverOffset: 4
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    position: 'bottom',
+                }
+            }
+        }
+    });
+
+    // Dummy data simulation
+    function getRandom(min, max, decimals = 1) {
+        const str = (Math.random() * (max - min) + min).toFixed(decimals);
+        return parseFloat(str);
+    }
+    
+    const assetTableBody = document.getElementById('asset-table');
+    const assets = [
+        { id: 'AGV-M-001', warehouse: 'Mumbai', location: 'Aisle 14-B', status: 'Active', battery: 88 },
+        { id: 'AGV-M-002', warehouse: 'Mumbai', location: 'Packing Station 2', status: 'Idle', battery: 95 },
+        { id: 'AGV-M-003', warehouse: 'Mumbai', location: 'Aisle 5-A', status: 'Active', battery: 65 },
+        { id: 'AGV-D-001', warehouse: 'Delhi', location: 'Dock 3', status: 'Charging', battery: 45 },
+        { id: 'AGV-D-002', warehouse: 'Delhi', location: 'Aisle 11-C', status: 'Active', battery: 78 },
+        { id: 'AGV-H-001', warehouse: 'Hyderabad', location: 'Aisle 22-D', status: 'Active', battery: 72 },
+        { id: 'AGV-H-002', warehouse: 'Hyderabad', location: 'Maintenance Bay', status: 'Maintenance', battery: 12 },
+    ];
+    
+    const alertListEl = document.getElementById('alert-list');
+    const alerts = [
+         {
+            type: 'High',
+            icon: 'siren',
+            color: 'red',
+            message: 'Freezer unit FZ-02 in Mumbai Cold Storage offline.',
+            time: '2 mins ago'
+        },
+        {
+            type: 'High',
+            icon: 'thermometer',
+            color: 'red',
+            message: 'Pharma Grade temp at 19.8°C (Threshold: 18°C).',
+            time: '5 mins ago'
+        },
+        {
+            type: 'Medium',
+            icon: 'truck',
+            color: 'yellow',
+            message: 'Vehicle DL01-AB1234 (Delhi) waiting > 60 mins.',
+            time: '25 mins ago'
+        },
+        {
+            type: 'Low',
+            icon: 'battery-warning',
+            color: 'blue',
+            message: 'AGV-H-002 battery critical (12%).',
+            time: '45 mins ago'
+        }
+    ];
+
+    let selectedWarehouse = 'Mumbai'; // Default warehouse
+    const warehouseTabs = document.querySelectorAll('.warehouse-tab');
+
+    function renderAssets(warehouse) {
+        assetTableBody.innerHTML = '';
+        const filteredAssets = assets.filter(asset => asset.warehouse === warehouse);
+
+        if (filteredAssets.length === 0) {
+            assetTableBody.innerHTML = `<tr><td colspan="4" class="text-center py-4 text-gray-500">No assets to display for this warehouse.</td></tr>`;
+            return;
+        }
+
+        filteredAssets.forEach(asset => {
+            let statusColor;
+            switch(asset.status) {
+                case 'Active': statusColor = 'text-green-700 bg-green-50'; break;
+                case 'Idle': statusColor = 'text-yellow-700 bg-yellow-50'; break;
+                case 'Charging': statusColor = 'text-blue-700 bg-blue-50'; break;
+                case 'Maintenance': statusColor = 'text-red-700 bg-red-50'; break;
+                default: statusColor = 'text-gray-600 bg-gray-100';
+            }
+            assetTableBody.innerHTML += `
+                <tr class="bg-white border-b">
+                    <td class="px-6 py-4 font-medium text-gray-900">${asset.id}</td>
+                    <td class="px-6 py-4">${asset.location}</td>
+                    <td class="px-6 py-4">
+                        <span class="px-2 py-1 text-xs font-semibold rounded-full ${statusColor}">${asset.status}</span>
+                    </td>
+                    <td class="px-6 py-4">${asset.battery}%</td>
+                </tr>
+            `;
+        });
+    }
+
+    warehouseTabs.forEach(tab => {
+        tab.addEventListener('click', () => {
+            selectedWarehouse = tab.dataset.warehouse;
+            
+            warehouseTabs.forEach(t => {
+                t.classList.remove('text-gray-800', 'border-gray-800');
+                t.classList.add('text-gray-500', 'hover:text-gray-700', 'hover:border-gray-300', 'border-transparent');
+            });
+            tab.classList.add('text-gray-800', 'border-gray-800');
+            tab.classList.remove('text-gray-500', 'hover:text-gray-700', 'hover:border-gray-300', 'border-transparent');
+            
+            renderAssets(selectedWarehouse);
+        });
+    });
+
+    function renderAlerts() {
+        alertListEl.innerHTML = '';
+        alerts.forEach(alert => {
+            alertListEl.innerHTML += `
+                <div class="flex items-start p-3 bg-gray-50 rounded-lg border">
+                    <div class="p-2 rounded-full bg-${alert.color}-100 text-${alert.color}-600 mr-4">
+                        <i data-lucide="${alert.icon}" class="w-5 h-5"></i>
+                    </div>
+                    <div>
+                        <p class="font-semibold text-gray-800">${alert.message}</p>
+                        <p class="text-xs text-gray-500">${alert.time}</p>
+                    </div>
+                </div>
+            `;
+        });
+        lucide.createIcons();
+    }
+
+    function updateDashboard() {
+        // Update top stats
+        document.getElementById('overall-efficiency').textContent = `${getRandom(94, 95.5)}%`;
+        document.getElementById('inventory-accuracy').textContent = `${getRandom(99.1, 99.4)}%`;
+
+        // Update environment
+        document.getElementById('temp-cold').textContent = `${getRandom(-2.5, -1.8)}°C`;
+        document.getElementById('hum-cold').textContent = `${getRandom(84, 86, 0)}%`;
+        document.getElementById('temp-ambient').textContent = `${getRandom(22.2, 22.8)}°C`;
+        document.getElementById('hum-ambient').textContent = `${getRandom(57, 59, 0)}%`;
+        
+        // Update MHE Chart
+        mheChart.data.datasets[0].data = [
+            getRandom(60, 70, 0),
+            getRandom(15, 25, 0),
+            getRandom(8, 12, 0),
+            getRandom(4, 6, 0)
+        ];
+        mheChart.update();
+        
+        // Update asset locations and statuses randomly
+        const randomAsset = assets[Math.floor(Math.random() * assets.length)];
+        if (randomAsset.status !== 'Maintenance' && randomAsset.status !== 'Charging') {
+            randomAsset.location = `Aisle ${getRandom(1, 30, 0)}-${['A','B','C','D'][getRandom(0,3,0)]}`;
+            if(randomAsset.battery > 20) {
+                 randomAsset.battery -= 1;
+            } else {
+                randomAsset.status = 'Low Battery';
+            }
+        }
+       
+        renderAssets(selectedWarehouse);
+    }
+    
+    // Initial render
+    renderAssets(selectedWarehouse);
+    renderAlerts();
+
+    // Set update interval
+    setInterval(updateDashboard, 5000);
+
+</script>
+</body>
+</html>
+
