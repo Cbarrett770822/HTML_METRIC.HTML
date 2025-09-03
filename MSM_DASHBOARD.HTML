@@ -1,0 +1,542 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MSM Sugar Warehouse Dashboard</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap');
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f3f4f6;
+            color: #1f2937;
+        }
+        .glass-panel {
+            background: rgba(255, 255, 255, 0.2);
+            backdrop-filter: blur(10px);
+            border-radius: 1rem;
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+        .chart-container {
+            position: relative;
+            height: 200px;
+        }
+    </style>
+</head>
+<body class="p-6 md:p-12 lg:p-16">
+
+    <div class="max-w-7xl mx-auto">
+        <header class="flex flex-col md:flex-row justify-between items-start md:items-center mb-10">
+            <div class="flex items-center">
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-10 h-10 text-blue-600 mr-4">
+                    <path fill-rule="evenodd" d="M3.75 3.75A.75.75 0 0 1 4.5 3h15a.75.75 0 0 1 .75.75v15a.75.75 0 0 1-.75.75h-15a.75.75 0 0 1-.75-.75v-15ZM10.5 6a.75.75 0 0 0-.75.75v6.5a.75.75 0 0 0 1.5 0v-6.5a.75.75 0 0 0-.75-.75ZM15.75 9a.75.75 0 0 0-.75.75v3.5a.75.75 0 0 0 1.5 0v-3.5a.75.75 0 0 0-.75-.75Z" clip-rule="evenodd" />
+                </svg>
+                <div>
+                    <h1 class="text-3xl font-bold text-gray-800">MSM Sugar Warehouse Dashboard</h1>
+                    <p class="text-lg text-gray-600 mt-1">Operational Overview for Blended Logistics</p>
+                </div>
+            </div>
+            <div class="mt-4 md:mt-0 flex items-center space-x-4">
+                <span class="text-sm font-medium text-gray-500">Last Updated: <span id="last-updated" class="text-gray-700"></span></span>
+                <button onclick="updateDashboard()" class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition duration-300">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" class="w-4 h-4 inline-block align-text-bottom mr-1">
+                        <path fill-rule="evenodd" d="M15.312 11.424a5.525 5.525 0 0 1-1.353 3.666a4.51 4.51 0 0 1-5.181 1.054a5.524 5.524 0 0 1-3.192-4.145 5.524 5.524 0 0 1 4.145-3.192a4.51 4.51 0 0 1 5.181 1.054a5.525 5.525 0 0 1 1.353 3.666ZM10 18a8 8 0 1 0 0-16 8 8 0 0 0 0 16Zm.75-13a.75.75 0 0 0-1.5 0v2.541l-1.077-.384a.75.75 0 1 0-.692 1.365l1.83.654a.75.75 0 0 0 .919-.244v-.001a.75.75 0 0 0 .151-.274h.005a.75.75 0 0 0-.001-.001Z" clip-rule="evenodd" />
+                    </svg>
+                    Refresh
+                </button>
+            </div>
+        </header>
+
+        <!-- Overall KPIs -->
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-6">
+            <div class="glass-panel p-6 text-center">
+                <h2 class="text-xl font-semibold text-gray-800 mb-2">On-Time Fulfillment</h2>
+                <p class="text-5xl font-bold text-green-600" id="fulfillment-rate">98.5%</p>
+            </div>
+            <div class="glass-panel p-6 text-center">
+                <h2 class="text-xl font-semibold text-gray-800 mb-2">Order Accuracy</h2>
+                <p class="text-5xl font-bold text-blue-600" id="accuracy-rate">99.2%</p>
+            </div>
+            <div class="glass-panel p-6 text-center">
+                <h2 class="text-xl font-semibold text-gray-800 mb-2">Inventory Turnover</h2>
+                <p class="text-5xl font-bold text-gray-800" id="inventory-turnover">15x</p>
+            </div>
+            <div class="glass-panel p-6 text-center">
+                <h2 class="text-xl font-semibold text-gray-800 mb-2">Storage Utilization</h2>
+                <p class="text-5xl font-bold text-gray-800" id="storage-utilization">85%</p>
+            </div>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-6">
+            <div class="glass-panel p-6">
+                <div class="chart-container">
+                    <canvas id="throughputChart"></canvas>
+                </div>
+            </div>
+            <div class="glass-panel p-6">
+                <div class="chart-container">
+                    <canvas id="utilizationChart"></canvas>
+                </div>
+            </div>
+            <div class="glass-panel p-6">
+                <div class="chart-container">
+                    <canvas id="flowChart"></canvas>
+                </div>
+            </div>
+            <div class="glass-panel p-6">
+                <div class="chart-container">
+                    <canvas id="laborChart"></canvas>
+                </div>
+            </div>
+             <div class="glass-panel p-6">
+                <div class="chart-container">
+                    <canvas id="accuracyTrendChart"></canvas>
+                </div>
+            </div>
+             <div class="glass-panel p-6">
+                <div class="chart-container">
+                    <canvas id="qualityChart"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
+            <!-- Real-Time Bottleneck and Alerts -->
+            <div class="glass-panel p-6 col-span-1 lg:col-span-3">
+                <h2 class="text-xl font-semibold text-gray-800 mb-4">Live Bottlenecks & Alerts</h2>
+                <div class="flex flex-col space-y-3">
+                    <div class="flex items-center space-x-3 bg-red-100/50 p-3 rounded-lg border border-red-300/50">
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-6 h-6 text-red-600 flex-shrink-0">
+                            <path fill-rule="evenodd" d="M2.25 12c0-5.385 4.365-9.75 9.75-9.75s9.75 4.365 9.75 9.75-4.365 9.75-9.75 9.75S2.25 17.385 2.25 12ZM12 8.25a.75.75 0 0 1 .75.75v3.75a.75.75 0 0 1-1.5 0V9a.75.75 0 0 1 .75-.75Zm0 8.25a.75.75 0 1 0 0-1.5.75.75 0 0 0 0 1.5Z" clip-rule="evenodd" />
+                        </svg>
+                        <div>
+                            <p class="text-sm font-medium text-gray-800">Critical Alert: AS/RS Throughput Below Target</p>
+                            <p class="text-xs text-gray-600">Automated system is operating at 70% of expected throughput. Maintenance required.</p>
+                        </div>
+                    </div>
+                    <div class="flex items-center space-x-3 bg-yellow-100/50 p-3 rounded-lg border border-yellow-300/50">
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-6 h-6 text-yellow-600 flex-shrink-0">
+                            <path fill-rule="evenodd" d="M9.401 3.003c1.155-2.003 4.043-2.003 5.197 0 .306.53.943.856 1.618.856h.93a3 3 0 0 1 2.815 2.107 1.5 1.5 0 0 0 1.516 1.059h.18a3 3 0 0 1 2.977 2.821c.075.83.612 1.579 1.327 1.954a3 3 0 0 1 1.261 2.664c-.032.32-.357.575-.957.902a2.5 2.5 0 0 0-.214.189c-.642.531-1.149 1.233-1.637 1.933a3 3 0 0 1-2.072 1.76l-.427.108a1.5 1.5 0 0 0-.964 1.185c-.066.386-.319.745-.659 1.026a3 3 0 0 1-1.218.523l-.119.01a3 3 0 0 1-1.965-.964c-.382-.361-.837-.624-1.32-.718a3 3 0 0 1-1.897 0c-.483.094-.938.356-1.32.718a3 3 0 0 1-1.965.964l-.12.009a3 3 0 0 1-1.218-.523c-.34-.28-.593-.64-.66-1.026a1.5 1.5 0 0 0-.964-1.185l-.426-.108a3 3 0 0 1-2.073-1.76c-.487-.7-.994-1.402-1.636-1.933a2.5 2.5 0 0 0-.214-.189c-.6-.327-.925-.582-.957-.902a3 3 0 0 1 1.26-2.664c.715-.375 1.252-1.124 1.328-1.954a3 3 0 0 1 2.977-2.821h.18a1.5 1.5 0 0 0 1.516-1.059a3 3 0 0 1 2.815-2.107h.93Z" clip-rule="evenodd" />
+                        </svg>
+                        <div>
+                            <p class="text-sm font-medium text-gray-800">Warning: Inbound Dock Congestion</p>
+                            <p class="text-xs text-gray-600">5 out of 8 inbound docks are currently occupied, expect delays for next 3 scheduled trucks.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-6">
+            <!-- Financial & Resource Metrics -->
+            <div class="glass-panel p-6">
+                <h2 class="text-xl font-semibold text-gray-800 mb-4">Financial & Resource Metrics</h2>
+                <div class="grid grid-cols-2 gap-4">
+                    <div class="bg-white/20 p-4 rounded-lg text-center">
+                        <p class="text-3xl font-bold text-gray-800" id="carrying-cost">RM 2.5M</p>
+                        <p class="text-xs text-gray-500 mt-1">Inventory Carrying Cost (Month)</p>
+                    </div>
+                    <div class="bg-white/20 p-4 rounded-lg text-center">
+                        <p class="text-3xl font-bold text-gray-800" id="cost-per-unit">RM 0.12</p>
+                        <p class="text-xs text-gray-500 mt-1">Cost Per Unit Handled</p>
+                    </div>
+                    <div class="bg-white/20 p-4 rounded-lg text-center">
+                        <p class="text-3xl font-bold text-gray-800" id="energy-consumption">1.5 MWh</p>
+                        <p class="text-xs text-gray-500 mt-1">Energy Consumption (Last 24h)</p>
+                    </div>
+                    <div class="bg-white/20 p-4 rounded-lg text-center">
+                        <p class="text-3xl font-bold text-gray-800" id="labor-cost">RM 5,200</p>
+                        <p class="text-xs text-gray-500 mt-1">Daily Labor Costs</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Quality & Safety Metrics -->
+            <div class="glass-panel p-6">
+                <h2 class="text-xl font-semibold text-gray-800 mb-4">Quality & Safety</h2>
+                <div class="grid grid-cols-2 gap-4">
+                    <div class="bg-white/20 p-4 rounded-lg text-center">
+                        <p class="text-3xl font-bold text-gray-800" id="picking-accuracy">99.7%</p>
+                        <p class="text-xs text-gray-500 mt-1">Order Picking Accuracy</p>
+                    </div>
+                    <div class="bg-white/20 p-4 rounded-lg text-center">
+                        <p class="text-3xl font-bold text-red-600" id="damage-rate">0.2%</p>
+                        <p class="text-xs text-gray-500 mt-1">Damage Rate</p>
+                    </div>
+                    <div class="bg-white/20 p-4 rounded-lg text-center">
+                        <p class="text-3xl font-bold text-gray-800" id="shrinkage-rate">0.1%</p>
+                        <p class="text-xs text-gray-500 mt-1">Shrinkage Rate</p>
+                    </div>
+                    <div class="bg-white/20 p-4 rounded-lg text-center">
+                        <p class="text-3xl font-bold text-green-600" id="lti-rate">0.15</p>
+                        <p class="text-xs text-gray-500 mt-1">LTI Rate</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Inbound Logistics -->
+            <div class="glass-panel p-6">
+                <h2 class="text-xl font-semibold text-gray-800 mb-4">Inbound Logistics</h2>
+                <div class="grid grid-cols-2 gap-4">
+                    <div class="bg-white/20 p-4 rounded-lg text-center">
+                        <p class="text-3xl font-bold text-gray-800" id="raw-sugar-received">150</p>
+                        <p class="text-xs text-gray-500 mt-1">Raw Sugar Received (tonnes)</p>
+                    </div>
+                    <div class="bg-white/20 p-4 rounded-lg text-center">
+                        <p class="text-3xl font-bold text-gray-800" id="receiving-time">2.5h</p>
+                        <p class="text-xs text-gray-500 mt-1">Avg. Receiving Time</p>
+                    </div>
+                    <div class="bg-white/20 p-4 rounded-lg text-center">
+                        <p class="text-3xl font-bold text-gray-800" id="inbound-dock-utilization">4/8</p>
+                        <p class="text-xs text-gray-500 mt-1">Dock Utilization</p>
+                    </div>
+                    <div class="bg-white/20 p-4 rounded-lg text-center">
+                        <p class="text-3xl font-bold text-gray-800" id="trucks-in">7</p>
+                        <p class="text-xs text-gray-500 mt-1">Trucks In Yard</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Outbound Logistics -->
+            <div class="glass-panel p-6">
+                <h2 class="text-xl font-semibold text-gray-800 mb-4">Outbound Logistics</h2>
+                <div class="grid grid-cols-2 gap-4">
+                    <div class="bg-white/20 p-4 rounded-lg text-center">
+                        <p class="text-3xl font-bold text-gray-800" id="outbound-shipments">22</p>
+                        <p class="text-xs text-gray-500 mt-1">Outbound Shipments (Today)</p>
+                    </div>
+                    <div class="bg-white/20 p-4 rounded-lg text-center">
+                        <p class="text-3xl font-bold text-gray-800" id="put-away-time">45</p>
+                        <p class="text-xs text-gray-500 mt-1">Put-Away Time (min)</p>
+                    </div>
+                    <div class="bg-white/20 p-4 rounded-lg text-center">
+                        <p class="text-3xl font-bold text-gray-800" id="shipped-by-asrs">40%</p>
+                        <p class="text-xs text-gray-500 mt-1">Shipped via Automated System</p>
+                    </div>
+                    <div class="bg-white/20 p-4 rounded-lg text-center">
+                        <p class="text-3xl font-bold text-gray-800" id="shipped-by-manual">60%</p>
+                        <p class="text-xs text-gray-500 mt-1">Shipped via Manual Picking</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-6">
+            <!-- Labor Management -->
+            <div class="glass-panel p-6">
+                <h2 class="text-xl font-semibold text-gray-800 mb-4">Labor Management</h2>
+                <div class="grid grid-cols-2 gap-4">
+                    <div class="bg-white/20 p-4 rounded-lg text-center">
+                        <p class="text-3xl font-bold text-gray-800" id="manual-pickers">15</p>
+                        <p class="text-xs text-gray-500 mt-1">Manual Pickers on Duty</p>
+                    </div>
+                    <div class="bg-white/20 p-4 rounded-lg text-center">
+                        <p class="text-3xl font-bold text-gray-800" id="avg-pick-time">3.2</p>
+                        <p class="text-xs text-gray-500 mt-1">Avg. Pick Time (min/order)</p>
+                    </div>
+                    <div class="bg-white/20 p-4 rounded-lg text-center">
+                        <p class="text-3xl font-bold text-gray-800" id="tasks-completed">95%</p>
+                        <p class="text-xs text-gray-500 mt-1">Manual Tasks Completed</p>
+                    </div>
+                    <div class="bg-white/20 p-4 rounded-lg text-center">
+                        <p class="text-3xl font-bold text-gray-800" id="training-compliance">100%</p>
+                        <p class="text-xs text-gray-500 mt-1">Safety Training Compliance</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ASRS Metrics -->
+            <div class="glass-panel p-6">
+                <h2 class="text-xl font-semibold text-gray-800 mb-4">AS/RS Performance (Swisslog WCS)</h2>
+                <div class="grid grid-cols-2 gap-4">
+                    <div class="bg-white/20 p-4 rounded-lg text-center">
+                        <p class="text-3xl font-bold text-gray-800" id="asrs-cycles">125</p>
+                        <p class="text-xs text-gray-500 mt-1">Cycles/Hour</p>
+                    </div>
+                    <div class="bg-white/20 p-4 rounded-lg text-center">
+                        <p class="text-3xl font-bold text-gray-800" id="asrs-throughput">240</p>
+                        <p class="text-xs text-gray-500 mt-1">Throughput (Pallets/Hr)</p>
+                    </div>
+                    <div class="bg-white/20 p-4 rounded-lg text-center">
+                        <p class="text-3xl font-bold text-gray-800" id="asrs-utilization">85%</p>
+                        <p class="text-xs text-gray-500 mt-1">System Utilization</p>
+                    </div>
+                    <div class="bg-white/20 p-4 rounded-lg text-center">
+                        <p class="text-3xl font-bold text-red-600" id="asrs-errors">2</p>
+                        <p class="text-xs text-gray-500 mt-1">System Errors (Last 24h)</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="glass-panel p-6">
+                <div class="chart-container">
+                    <canvas id="asrsPerformanceChart"></canvas>
+                </div>
+            </div>
+        </div>
+        
+    </div>
+
+    <!-- Chart.js for graphs -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    <script>
+        // Data for charts
+        const dailyThroughputData = {
+            labels: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
+            datasets: [{
+                label: 'Units Shipped (k)',
+                data: [42, 55, 60, 58, 65, 45, 30],
+                borderColor: '#1e40af',
+                backgroundColor: '#3b82f6',
+                tension: 0.4,
+                fill: false,
+            }]
+        };
+
+        const spaceUtilizationData = {
+            labels: ['Zone A (ASRS)', 'Zone B (Bulk)', 'Zone C (Manual)', 'Overflow'],
+            datasets: [{
+                label: 'Space Utilization (%)',
+                data: [92, 85, 78, 55],
+                backgroundColor: ['#1e40af', '#3b82f6', '#93c5fd', '#bfdbfe'],
+                borderColor: '#ffffff',
+                borderWidth: 1
+            }]
+        };
+
+        const inboundOutboundData = {
+            labels: ['Inbound (tonnes)', 'Outbound (tonnes)'],
+            datasets: [{
+                data: [180, 220],
+                backgroundColor: ['#10b981', '#f59e0b'],
+                hoverOffset: 4
+            }]
+        };
+        
+        const laborUtilizationData = {
+            labels: ['09:00', '10:00', '11:00', '12:00', '13:00', '14:00', '15:00'],
+            datasets: [{
+                label: 'Picker Tasks/Hour',
+                data: [75, 82, 88, 70, 78, 85, 90],
+                borderColor: '#d97706',
+                backgroundColor: '#fcd34d',
+                tension: 0.4,
+                fill: false
+            }]
+        };
+        
+        const inventoryAccuracyData = {
+            labels: ['Day -6', 'Day -5', 'Day -4', 'Day -3', 'Day -2', 'Yesterday', 'Today'],
+            datasets: [{
+                label: 'Accuracy %',
+                data: [99.5, 99.6, 99.5, 99.7, 99.8, 99.9, 99.7],
+                borderColor: '#10b981',
+                backgroundColor: 'rgba(16, 185, 129, 0.2)',
+                fill: true,
+                tension: 0.4
+            }]
+        };
+        
+        const qualityData = {
+            labels: ['Damage Rate', 'Shrinkage Rate'],
+            datasets: [{
+                label: 'Rate %',
+                data: [0.2, 0.1],
+                backgroundColor: ['#ef4444', '#f59e0b'],
+                borderColor: '#ffffff',
+                borderWidth: 1
+            }]
+        };
+
+        const asrsPerformanceData = {
+            labels: ['01:00', '04:00', '07:00', '10:00', '13:00', '16:00', '19:00', '22:00'],
+            datasets: [{
+                label: 'AS/RS Throughput (Pallets/Hr)',
+                data: [250, 280, 295, 270, 240, 260, 285, 275],
+                borderColor: '#6366f1',
+                backgroundColor: 'rgba(99, 102, 241, 0.2)',
+                fill: true,
+                tension: 0.4
+            }]
+        };
+
+
+        // Function to create or update charts
+        let throughputChart;
+        let utilizationChart;
+        let flowChart;
+        let laborChart;
+        let accuracyTrendChart;
+        let qualityChart;
+        let asrsPerformanceChart;
+
+        function createCharts() {
+            const throughputCtx = document.getElementById('throughputChart').getContext('2d');
+            throughputChart = new Chart(throughputCtx, {
+                type: 'line',
+                data: dailyThroughputData,
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { display: false },
+                        title: { display: true, text: 'Daily Throughput' }
+                    }
+                }
+            });
+
+            const utilizationCtx = document.getElementById('utilizationChart').getContext('2d');
+            utilizationChart = new Chart(utilizationCtx, {
+                type: 'bar',
+                data: spaceUtilizationData,
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { display: false },
+                        title: { display: true, text: 'Space Utilization by Zone' }
+                    },
+                    scales: {
+                        y: { beginAtZero: true, max: 100 }
+                    }
+                }
+            });
+
+            const flowCtx = document.getElementById('flowChart').getContext('2d');
+            flowChart = new Chart(flowCtx, {
+                type: 'pie',
+                data: inboundOutboundData,
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { position: 'bottom' },
+                        title: { display: true, text: 'Inbound vs. Outbound Flow (Today)' }
+                    }
+                }
+            });
+            
+            const laborCtx = document.getElementById('laborChart').getContext('2d');
+            laborChart = new Chart(laborCtx, {
+                type: 'line',
+                data: laborUtilizationData,
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { display: false },
+                        title: { display: true, text: 'Labor Utilization (Tasks/Hour)' }
+                    },
+                    scales: {
+                        y: { beginAtZero: true }
+                    }
+                }
+            });
+            
+            const accuracyTrendCtx = document.getElementById('accuracyTrendChart').getContext('2d');
+            accuracyTrendChart = new Chart(accuracyTrendCtx, {
+                type: 'line',
+                data: inventoryAccuracyData,
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { display: false },
+                        title: { display: true, text: 'Inventory Accuracy Trend' }
+                    },
+                    scales: {
+                        y: { beginAtZero: false, min: 99, max: 100 }
+                    }
+                }
+            });
+
+            const qualityCtx = document.getElementById('qualityChart').getContext('2d');
+            qualityChart = new Chart(qualityCtx, {
+                type: 'bar',
+                data: qualityData,
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { display: false },
+                        title: { display: true, text: 'Damage vs. Shrinkage Rate' }
+                    },
+                    scales: {
+                        y: { beginAtZero: true, max: 1 }
+                    }
+                }
+            });
+
+            const asrsPerformanceCtx = document.getElementById('asrsPerformanceChart').getContext('2d');
+            asrsPerformanceChart = new Chart(asrsPerformanceCtx, {
+                type: 'line',
+                data: asrsPerformanceData,
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { display: false },
+                        title: { display: true, text: 'AS/RS Throughput (Last 24h)' }
+                    },
+                    scales: {
+                        y: { beginAtZero: true }
+                    }
+                }
+            });
+        }
+
+        // Dummy update function to simulate live data
+        function updateDashboard() {
+            const now = new Date();
+            document.getElementById('last-updated').innerText = now.toLocaleTimeString();
+
+            // Randomize KPI values for demonstration
+            document.getElementById('fulfillment-rate').innerText = (Math.random() * (99.9 - 97) + 97).toFixed(1) + '%';
+            document.getElementById('accuracy-rate').innerText = (Math.random() * (99.9 - 98) + 98).toFixed(1) + '%';
+            document.getElementById('inventory-turnover').innerText = (Math.random() * (20 - 10) + 10).toFixed(0) + 'x';
+            document.getElementById('storage-utilization').innerText = (Math.random() * (95 - 75) + 75).toFixed(0) + '%';
+            
+            document.getElementById('carrying-cost').innerText = 'RM ' + (Math.random() * (3.0 - 2.0) + 2.0).toFixed(1) + 'M';
+            document.getElementById('cost-per-unit').innerText = 'RM ' + (Math.random() * (0.15 - 0.10) + 0.10).toFixed(2);
+            document.getElementById('energy-consumption').innerText = (Math.random() * (2.0 - 1.0) + 1.0).toFixed(1) + ' MWh';
+            document.getElementById('labor-cost').innerText = 'RM ' + (Math.random() * (6000 - 4500) + 4500).toFixed(0);
+
+            document.getElementById('picking-accuracy').innerText = (Math.random() * (99.9 - 99.5) + 99.5).toFixed(1) + '%';
+            document.getElementById('damage-rate').innerText = (Math.random() * (0.5 - 0.1) + 0.1).toFixed(1) + '%';
+            document.getElementById('shrinkage-rate').innerText = (Math.random() * (0.3 - 0.05) + 0.05).toFixed(1) + '%';
+            document.getElementById('lti-rate').innerText = (Math.random() * (0.3 - 0.1) + 0.1).toFixed(2);
+
+            document.getElementById('raw-sugar-received').innerText = (Math.random() * (200 - 100) + 100).toFixed(0);
+            document.getElementById('receiving-time').innerText = (Math.random() * (3 - 1) + 1).toFixed(1) + 'h';
+            const docks = Math.floor(Math.random() * 8) + 1;
+            document.getElementById('inbound-dock-utilization').innerText = `${docks}/8`;
+            const trucks = Math.floor(Math.random() * 12) + 1;
+            document.getElementById('trucks-in').innerText = `${trucks}`;
+
+            document.getElementById('outbound-shipments').innerText = (Math.random() * (30 - 15) + 15).toFixed(0);
+            document.getElementById('put-away-time').innerText = (Math.random() * (60 - 30) + 30).toFixed(0);
+            const asrs_ratio = (Math.random() * (50 - 30) + 30).toFixed(0);
+            document.getElementById('shipped-by-asrs').innerText = `${asrs_ratio}%`;
+            document.getElementById('shipped-by-manual').innerText = `${100 - asrs_ratio}%`;
+
+            document.getElementById('manual-pickers').innerText = (Math.random() * (20 - 10) + 10).toFixed(0);
+            document.getElementById('avg-pick-time').innerText = (Math.random() * (4.5 - 2.5) + 2.5).toFixed(1);
+            document.getElementById('tasks-completed').innerText = (Math.random() * (100 - 90) + 90).toFixed(0) + '%';
+            document.getElementById('training-compliance').innerText = (Math.random() * (100 - 98) + 98).toFixed(0) + '%';
+            
+            document.getElementById('asrs-cycles').innerText = (Math.random() * (150 - 100) + 100).toFixed(0);
+            document.getElementById('asrs-throughput').innerText = (Math.random() * (300 - 200) + 200).toFixed(0);
+            document.getElementById('asrs-utilization').innerText = (Math.random() * (90 - 70) + 70).toFixed(0) + '%';
+            document.getElementById('asrs-errors').innerText = (Math.random() * (5 - 0)).toFixed(0);
+        }
+
+        window.onload = function() {
+            updateDashboard();
+            createCharts();
+        };
+    </script>
+</body>
+</html>
