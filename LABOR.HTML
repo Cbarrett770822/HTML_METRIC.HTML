@@ -1,0 +1,558 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI-Enhanced Labor Dashboard</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://css.gg/css" rel="stylesheet" />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f3f4f6;
+            color: #1f2937;
+        }
+        .sidebar {
+            background-color: #ffffff;
+            border-right: 1px solid #e5e7eb;
+        }
+        .card {
+            background-color: #ffffff;
+            border: 1px solid #e5e7eb;
+            transition: all 0.2s ease-in-out;
+            position: relative;
+        }
+        .card:hover {
+            border-color: #d1d5db;
+            box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+        }
+        .nav-link {
+            transition: all 0.2s ease-in-out;
+            color: #4b5563;
+        }
+        .nav-link.active, .nav-link:hover {
+            background-color: #eef2ff;
+            color: #4f46e5;
+        }
+        .view {
+            display: none;
+        }
+        .view.active {
+            display: block;
+        }
+        .genai-output {
+            background-color: #f9fafb;
+            border-left: 4px solid #4f46e5;
+        }
+        #kpi-modal-backdrop {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+            z-index: 40;
+        }
+        #kpi-modal {
+            display: none;
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            z-index: 50;
+        }
+        .info-btn {
+            position: absolute;
+            top: 0.5rem;
+            right: 0.5rem;
+            color: #9ca3af;
+            cursor: pointer;
+            transition: color 0.2s;
+        }
+        .info-btn:hover {
+            color: #4f46e5;
+        }
+    </style>
+</head>
+<body class="flex h-screen overflow-hidden">
+
+    <!-- Sidebar Navigation -->
+    <aside class="sidebar w-64 flex-shrink-0 p-4 space-y-4 overflow-y-auto">
+        <div class="flex items-center space-x-2 px-2">
+            <i data-lucide="layout-dashboard" class="text-indigo-600"></i>
+            <h1 class="text-xl font-bold text-gray-800">LMS Command Center</h1>
+        </div>
+        <nav class="space-y-2">
+            <a href="#" class="nav-link active flex items-center space-x-3 p-2 rounded-lg" data-target="live-ops">
+                <i data-lucide="activity"></i><span>Live Operations</span>
+            </a>
+            <a href="#" class="nav-link flex items-center space-x-3 p-2 rounded-lg" data-target="productivity">
+                <i data-lucide="trending-up"></i><span>Productivity & Planning</span>
+            </a>
+            <a href="#" class="nav-link flex items-center space-x-3 p-2 rounded-lg" data-target="costs">
+                <i data-lucide="dollar-sign"></i><span>Cost & Compliance</span>
+            </a>
+            <a href="#" class="nav-link flex items-center space-x-3 p-2 rounded-lg" data-target="ai">
+                <i data-lucide="brain-circuit"></i><span>AI Assistant</span>
+            </a>
+        </nav>
+    </aside>
+
+    <!-- Main Content -->
+    <main class="flex-1 p-6 overflow-y-auto">
+
+        <!-- Live Operations View -->
+        <div id="live-ops" class="view active">
+            <header class="mb-6">
+                <h2 class="text-2xl font-bold text-gray-800">Live Operations: Current Snapshot</h2>
+                <p class="text-gray-500">Real-time metrics for Warehouse A - Morning Shift</p>
+            </header>
+            <div class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-6 mb-6">
+                <div class="card p-4 rounded-lg"><button class="info-btn" data-kpi="live-headcount"><i data-lucide="info" class="w-4 h-4"></i></button><h3 class="text-sm font-medium text-gray-500">Live Headcount</h3><p class="text-3xl font-bold text-gray-800">152</p></div>
+                <div class="card p-4 rounded-lg"><button class="info-btn" data-kpi="tasks-queued"><i data-lucide="info" class="w-4 h-4"></i></button><h3 class="text-sm font-medium text-gray-500">Tasks Queued</h3><p class="text-3xl font-bold text-blue-600">289</p></div>
+                <div class="card p-4 rounded-lg"><button class="info-btn" data-kpi="backlog-hours"><i data-lucide="info" class="w-4 h-4"></i></button><h3 class="text-sm font-medium text-gray-500">Backlog (Hours)</h3><p class="text-3xl font-bold text-gray-800">1.5</p></div>
+                <div class="card p-4 rounded-lg"><button class="info-btn" data-kpi="active-exceptions"><i data-lucide="info" class="w-4 h-4"></i></button><h3 class="text-sm font-medium text-gray-500">Active Exceptions</h3><p class="text-3xl font-bold text-red-500">8</p></div>
+                <div class="card p-4 rounded-lg"><button class="info-btn" data-kpi="overtime-rate"><i data-lucide="info" class="w-4 h-4"></i></button><h3 class="text-sm font-medium text-gray-500">Overtime Rate</h3><p class="text-3xl font-bold text-yellow-500">5%</p></div>
+                <div class="card p-4 rounded-lg"><button class="info-btn" data-kpi="absence-rate"><i data-lucide="info" class="w-4 h-4"></i></button><h3 class="text-sm font-medium text-gray-500">Absence Rate</h3><p class="text-3xl font-bold text-gray-800">3%</p></div>
+            </div>
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                 <div class="card p-5 rounded-lg lg:col-span-3">
+                    <button class="info-btn" data-kpi="task-flow"><i data-lucide="info" class="w-4 h-4"></i></button>
+                    <h3 class="font-semibold text-gray-800 mb-4">Task Flow Snapshot</h3>
+                    <div class="flex justify-between items-stretch text-center text-xs text-gray-600 space-x-2">
+                        <!-- Receiving Card -->
+                        <div class="flex-1 card p-3 rounded-md border-l-4 border-blue-500">
+                            <p class="font-bold text-sm text-gray-700">Receiving</p>
+                            <div class="mt-2 space-y-1 text-left">
+                                <div class="flex justify-between items-center"><span><i data-lucide="list-checks" class="inline w-3 h-3 mr-1 text-gray-400"></i>Tasks</span><span class="font-bold text-lg text-gray-800">45</span></div>
+                                <div class="flex justify-between items-center"><span><i data-lucide="clock" class="inline w-3 h-3 mr-1 text-gray-400"></i>Avg Age</span><span class="font-semibold">15m</span></div>
+                                <div class="flex justify-between items-center"><span><i data-lucide="shield-alert" class="inline w-3 h-3 mr-1 text-gray-400"></i>SLA Risk</span><span class="font-semibold text-green-600">Low</span></div>
+                                <div class="flex justify-between items-center"><span><i data-lucide="users" class="inline w-3 h-3 mr-1 text-gray-400"></i>Staff</span><span class="font-semibold">15</span></div>
+                            </div>
+                        </div>
+                        <div class="flex items-center"><i data-lucide="chevron-right" class="text-gray-400"></i></div>
+                        <!-- Putaway Card -->
+                        <div class="flex-1 card p-3 rounded-md border-l-4 border-cyan-500">
+                            <p class="font-bold text-sm text-gray-700">Putaway</p>
+                            <div class="mt-2 space-y-1 text-left">
+                                <div class="flex justify-between items-center"><span><i data-lucide="list-checks" class="inline w-3 h-3 mr-1 text-gray-400"></i>Tasks</span><span class="font-bold text-lg text-gray-800">82</span></div>
+                                <div class="flex justify-between items-center"><span><i data-lucide="clock" class="inline w-3 h-3 mr-1 text-gray-400"></i>Avg Age</span><span class="font-semibold">25m</span></div>
+                                <div class="flex justify-between items-center"><span><i data-lucide="shield-alert" class="inline w-3 h-3 mr-1 text-gray-400"></i>SLA Risk</span><span class="font-semibold text-green-600">Low</span></div>
+                                <div class="flex justify-between items-center"><span><i data-lucide="users" class="inline w-3 h-3 mr-1 text-gray-400"></i>Staff</span><span class="font-semibold">28</span></div>
+                            </div>
+                        </div>
+                        <div class="flex items-center"><i data-lucide="chevron-right" class="text-gray-400"></i></div>
+                        <!-- Picking Card -->
+                        <div class="flex-1 card p-3 rounded-md border-l-4 border-red-500 bg-red-50">
+                            <p class="font-bold text-sm text-gray-700">Picking</p>
+                             <div class="mt-2 space-y-1 text-left">
+                                <div class="flex justify-between items-center"><span><i data-lucide="list-checks" class="inline w-3 h-3 mr-1 text-gray-400"></i>Tasks</span><span class="font-bold text-lg text-gray-800">210</span></div>
+                                <div class="flex justify-between items-center"><span><i data-lucide="clock" class="inline w-3 h-3 mr-1 text-gray-400"></i>Avg Age</span><span class="font-semibold text-red-600">55m</span></div>
+                                <div class="flex justify-between items-center"><span><i data-lucide="shield-alert" class="inline w-3 h-3 mr-1 text-gray-400"></i>SLA Risk</span><span class="font-semibold text-red-600">High</span></div>
+                                <div class="flex justify-between items-center"><span><i data-lucide="users" class="inline w-3 h-3 mr-1 text-gray-400"></i>Staff</span><span class="font-semibold">65</span></div>
+                            </div>
+                        </div>
+                        <div class="flex items-center"><i data-lucide="chevron-right" class="text-gray-400"></i></div>
+                        <!-- Packing Card -->
+                         <div class="flex-1 card p-3 rounded-md border-l-4 border-yellow-500">
+                            <p class="font-bold text-sm text-gray-700">Packing</p>
+                             <div class="mt-2 space-y-1 text-left">
+                                <div class="flex justify-between items-center"><span><i data-lucide="list-checks" class="inline w-3 h-3 mr-1 text-gray-400"></i>Tasks</span><span class="font-bold text-lg text-gray-800">75</span></div>
+                                <div class="flex justify-between items-center"><span><i data-lucide="clock" class="inline w-3 h-3 mr-1 text-gray-400"></i>Avg Age</span><span class="font-semibold text-yellow-600">40m</span></div>
+                                <div class="flex justify-between items-center"><span><i data-lucide="shield-alert" class="inline w-3 h-3 mr-1 text-gray-400"></i>SLA Risk</span><span class="font-semibold text-yellow-600">Med</span></div>
+                                <div class="flex justify-between items-center"><span><i data-lucide="users" class="inline w-3 h-3 mr-1 text-gray-400"></i>Staff</span><span class="font-semibold">32</span></div>
+                            </div>
+                        </div>
+                        <div class="flex items-center"><i data-lucide="chevron-right" class="text-gray-400"></i></div>
+                        <!-- Loading Card -->
+                        <div class="flex-1 card p-3 rounded-md border-l-4 border-green-500">
+                            <p class="font-bold text-sm text-gray-700">Loading</p>
+                            <div class="mt-2 space-y-1 text-left">
+                                <div class="flex justify-between items-center"><span><i data-lucide="list-checks" class="inline w-3 h-3 mr-1 text-gray-400"></i>Tasks</span><span class="font-bold text-lg text-gray-800">12</span></div>
+                                <div class="flex justify-between items-center"><span><i data-lucide="clock" class="inline w-3 h-3 mr-1 text-gray-400"></i>Avg Age</span><span class="font-semibold">10m</span></div>
+                                <div class="flex justify-between items-center"><span><i data-lucide="shield-alert" class="inline w-3 h-3 mr-1 text-gray-400"></i>SLA Risk</span><span class="font-semibold text-green-600">Low</span></div>
+                                <div class="flex justify-between items-center"><span><i data-lucide="users" class="inline w-3 h-3 mr-1 text-gray-400"></i>Staff</span><span class="font-semibold">12</span></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="card p-5 rounded-lg lg:col-span-2">
+                    <button class="info-btn" data-kpi="congestion-index"><i data-lucide="info" class="w-4 h-4"></i></button>
+                    <h3 class="font-semibold text-gray-800 mb-4">Congestion Index by Zone</h3>
+                    <canvas id="zoneCongestionChart"></canvas>
+                </div>
+                <div class="card p-5 rounded-lg">
+                    <button class="info-btn" data-kpi="headcount-status-chart"><i data-lucide="info" class="w-4 h-4"></i></button>
+                    <h3 class="font-semibold text-gray-800 mb-4">Headcount by Status (Live)</h3>
+                    <canvas id="headcountStatusChart"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <!-- Productivity & Planning View -->
+        <div id="productivity" class="view">
+            <header class="mb-6"><h2 class="text-2xl font-bold text-gray-800">Productivity & Planning</h2>
+                <p class="text-gray-500">Metrics to improve efficiency and plan labor effectively.</p>
+            </header>
+            <div class="grid grid-cols-2 lg:grid-cols-4 gap-6 mb-6">
+                <div class="card p-4 rounded-lg"><button class="info-btn" data-kpi="uph"><i data-lucide="info" class="w-4 h-4"></i></button><h3 class="text-sm font-medium text-gray-500">Avg. UPH</h3><p class="text-3xl font-bold text-gray-800">124</p></div>
+                <div class="card p-4 rounded-lg"><button class="info-btn" data-kpi="direct-indirect"><i data-lucide="info" class="w-4 h-4"></i></button><h3 class="text-sm font-medium text-gray-500">Direct Labor %</h3><p class="text-3xl font-bold text-gray-800">89%</p></div>
+                <div class="card p-4 rounded-lg"><button class="info-btn" data-kpi="travel-time"><i data-lucide="info" class="w-4 h-4"></i></button><h3 class="text-sm font-medium text-gray-500">Avg. Travel Time/Task</h3><p class="text-3xl font-bold text-gray-800">1.2<span class="text-lg"> min</span></p></div>
+                <div class="card p-4 rounded-lg"><button class="info-btn" data-kpi="rework-rate"><i data-lucide="info" class="w-4 h-4"></i></button><h3 class="text-sm font-medium text-gray-500">Rework Rate</h3><p class="text-3xl font-bold text-red-500">1.8%</p></div>
+                <div class="card p-4 rounded-lg"><button class="info-btn" data-kpi="cross-skill"><i data-lucide="info" class="w-4 h-4"></i></button><h3 class="text-sm font-medium text-gray-500">Cross-Skill Coverage</h3><p class="text-3xl font-bold text-green-600">75%</p></div>
+                <div class="card p-4 rounded-lg"><button class="info-btn" data-kpi="training-compliance"><i data-lucide="info" class="w-4 h-4"></i></button><h3 class="text-sm font-medium text-gray-500">Training Compliance</h3><p class="text-3xl font-bold text-green-600">92%</p></div>
+                <div class="card p-4 rounded-lg"><button class="info-btn" data-kpi="task-reassignment"><i data-lucide="info" class="w-4 h-4"></i></button><h3 class="text-sm font-medium text-gray-500">Task Reassignment Rate</h3><p class="text-3xl font-bold text-yellow-500">2.5%</p></div>
+            </div>
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <div class="card p-5 rounded-lg">
+                    <button class="info-btn" data-kpi="coverage-ratio"><i data-lucide="info" class="w-4 h-4"></i></button>
+                    <h3 class="font-semibold text-gray-800 mb-4">Coverage Ratio (Planned vs. Required FTEs)</h3>
+                    <canvas id="coverageChart"></canvas>
+                </div>
+                 <div class="card p-5 rounded-lg">
+                     <button class="info-btn" data-kpi="productivity-standard"><i data-lucide="info" class="w-4 h-4"></i></button>
+                    <h3 class="font-semibold text-gray-800 mb-4">Productivity (UPH) vs. Labor Standard</h3>
+                    <canvas id="productivityChart"></canvas>
+                </div>
+                 <div class="card p-5 rounded-lg">
+                    <button class="info-btn" data-kpi="direct-indirect-chart"><i data-lucide="info" class="w-4 h-4"></i></button>
+                    <h3 class="font-semibold text-gray-800 mb-4">Direct vs. Indirect Labor Breakdown</h3>
+                    <canvas id="laborBreakdownChart"></canvas>
+                </div>
+                <div class="card p-5 rounded-lg">
+                    <button class="info-btn" data-kpi="skill-distribution-chart"><i data-lucide="info" class="w-4 h-4"></i></button>
+                    <h3 class="font-semibold text-gray-800 mb-4">Workforce Skill Distribution</h3>
+                    <canvas id="skillDistributionChart"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <!-- Cost & Compliance View -->
+        <div id="costs" class="view">
+            <header class="mb-6"><h2 class="text-2xl font-bold text-gray-800">Cost & Compliance</h2>
+            <p class="text-gray-500">Understanding and improving the cost of operations.</p>
+            </header>
+            <div class="grid grid-cols-2 lg:grid-cols-4 gap-6 mb-6">
+                <div class="card p-4 rounded-lg"><button class="info-btn" data-kpi="cost-of-sales"><i data-lucide="info" class="w-4 h-4"></i></button><h3 class="text-sm font-medium text-gray-500">Labor Cost % of Sales</h3><p class="text-3xl font-bold text-gray-800">5.2%</p></div>
+                <div class="card p-4 rounded-lg"><button class="info-btn" data-kpi="cost-per-unit"><i data-lucide="info" class="w-4 h-4"></i></button><h3 class="text-sm font-medium text-gray-500">Cost Per Unit Shipped</h3><p class="text-3xl font-bold text-gray-800">$0.85</p></div>
+                <div class="card p-4 rounded-lg"><button class="info-btn" data-kpi="attrition-cost"><i data-lucide="info" class="w-4 h-4"></i></button><h3 class="text-sm font-medium text-gray-500">Attrition Cost (YTD)</h3><p class="text-3xl font-bold text-red-500">$55k</p></div>
+                <div class="card p-4 rounded-lg"><button class="info-btn" data-kpi="ls-compliance"><i data-lucide="info" class="w-4 h-4"></i></button><h3 class="text-sm font-medium text-gray-500">LS Compliance %</h3><p class="text-3xl font-bold text-green-600">98%</p></div>
+                <div class="card p-4 rounded-lg"><button class="info-btn" data-kpi="task-error-rate"><i data-lucide="info" class="w-4 h-4"></i></button><h3 class="text-sm font-medium text-gray-500">Task Error Rate</h3><p class="text-3xl font-bold text-red-500">0.8%</p></div>
+                <div class="card p-4 rounded-lg"><button class="info-btn" data-kpi="exceptions-resolved"><i data-lucide="info" class="w-4 h-4"></i></button><h3 class="text-sm font-medium text-gray-500">Exceptions Resolved On-Time</h3><p class="text-3xl font-bold text-green-600">95%</p></div>
+                <div class="card p-4 rounded-lg"><button class="info-btn" data-kpi="sla-compliance-3pl"><i data-lucide="info" class="w-4 h-4"></i></button><h3 class="text-sm font-medium text-gray-500">SLA Compliance (3PL)</h3><p class="text-3xl font-bold text-green-600">99%</p></div>
+            </div>
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <div class="card p-5 rounded-lg">
+                    <button class="info-btn" data-kpi="cost-variance"><i data-lucide="info" class="w-4 h-4"></i></button>
+                    <h3 class="font-semibold text-gray-800 mb-4">Labor Cost Variance by Process (vs. Plan)</h3>
+                    <canvas id="costVarianceChart"></canvas>
+                </div>
+                <div class="card p-5 rounded-lg">
+                    <button class="info-btn" data-kpi="incentive-payout"><i data-lucide="info" class="w-4 h-4"></i></button>
+                    <h3 class="font-semibold text-gray-800 mb-4">Incentive Payout vs. Target</h3>
+                    <canvas id="incentiveChart"></canvas>
+                </div>
+                <div class="card p-5 rounded-lg">
+                    <button class="info-btn" data-kpi="task-error-chart"><i data-lucide="info" class="w-4 h-4"></i></button>
+                    <h3 class="font-semibold text-gray-800 mb-4">Task Error Rate by Process</h3>
+                    <canvas id="errorRateChart"></canvas>
+                </div>
+                <div class="card p-5 rounded-lg">
+                    <button class="info-btn" data-kpi="attrition-chart"><i data-lucide="info" class="w-4 h-4"></i></button>
+                    <h3 class="font-semibold text-gray-800 mb-4">Monthly Attrition Rate Trend</h3>
+                    <canvas id="attritionTrendChart"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <!-- AI Assistant View -->
+        <div id="ai" class="view">
+            <header class="mb-6"><h2 class="text-2xl font-bold text-gray-800">AI Assistant: Proactive Insights</h2>
+            <p class="text-gray-500">Moving from reactive to predictive and prescriptive operations.</p>
+            </header>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+                 <div class="card p-5 rounded-lg border-l-4 border-indigo-500"><button class="info-btn" data-kpi="bottleneck-forecast"><i data-lucide="info" class="w-4 h-4"></i></button><h3 class="text-sm font-medium text-gray-500">Bottleneck Forecast</h3><p class="text-2xl font-bold text-gray-800">Packing</p><p class="text-xs text-yellow-500">High risk in ~35 min</p></div>
+                <div class="card p-5 rounded-lg border-l-4 border-indigo-500"><button class="info-btn" data-kpi="staffing-rec"><i data-lucide="info" class="w-4 h-4"></i></button><h3 class="text-sm font-medium text-gray-500">Dynamic Staffing Rec.</h3><p class="text-2xl font-bold text-gray-800">+2 to Packing</p><p class="text-xs text-green-500">Reassign from Putaway</p></div>
+                <div class="card p-5 rounded-lg border-l-4 border-indigo-500"><button class="info-btn" data-kpi="fatigue-index"><i data-lucide="info" class="w-4 h-4"></i></button><h3 class="text-sm font-medium text-gray-500">Fatigue Index Score</h3><p class="text-2xl font-bold text-red-500">High</p><p class="text-xs text-gray-500">For 3 pickers on OT</p></div>
+                <div class="card p-5 rounded-lg border-l-4 border-purple-500"><button class="info-btn" data-kpi="forecast-accuracy"><i data-lucide="info" class="w-4 h-4"></i></button><h3 class="text-sm font-medium text-gray-500">Labor Forecast Accuracy</h3><p class="text-2xl font-bold text-gray-800">96%</p><p class="text-xs text-gray-500">(MAPE for next 24h)</p></div>
+                <div class="card p-5 rounded-lg border-l-4 border-purple-500"><button class="info-btn" data-kpi="top-training-opp"><i data-lucide="info" class="w-4 h-4"></i></button><h3 class="text-sm font-medium text-gray-500">Top Training Opportunity</h3><p class="text-2xl font-bold text-gray-800">Packing - Fragile</p><p class="text-xs text-gray-500">5 employees below 80% std.</p></div>
+                <div class="card p-5 rounded-lg border-l-4 border-purple-500"><button class="info-btn" data-kpi="top-process-anomaly"><i data-lucide="info" class="w-4 h-4"></i></button><h3 class="text-sm font-medium text-gray-500">Top Process Anomaly</h3><p class="text-2xl font-bold text-gray-800">Zone C Travel Path</p><p class="text-xs text-red-500">18% longer than optimal</p></div>
+
+            </div>
+            <div class="card p-6 rounded-lg">
+                <h3 class="font-semibold text-gray-800 mb-4 text-lg flex items-center">
+                    <i data-lucide="sparkles" class="mr-2 text-indigo-500"></i>Generative AI Assistant
+                </h3>
+                <div class="space-y-4">
+                    <div class="genai-output p-4 rounded-lg">
+                        <p class="font-semibold mb-2 text-gray-700">Ask the AI Assistant:</p>
+                        <div class="flex flex-wrap gap-2">
+                            <button class="genai-prompt-btn bg-indigo-600 hover:bg-indigo-700 text-white text-sm py-1 px-3 rounded-full" data-type="rca">Analyze drop for Rohan Sharma</button>
+                            <button class="genai-prompt-btn bg-purple-600 hover:bg-purple-700 text-white text-sm py-1 px-3 rounded-full" data-type="coach">Generate coaching plan for fragile packing</button>
+                            <button class="genai-prompt-btn bg-purple-600 hover:bg-purple-700 text-white text-sm py-1 px-3 rounded-full" data-type="process">Suggest fix for Zone C travel anomaly</button>
+                            <button class="genai-prompt-btn bg-purple-600 hover:bg-purple-700 text-white text-sm py-1 px-3 rounded-full" data-type="plan">Create cross-training plan for Q4 peak</button>
+                        </div>
+                    </div>
+                    <div id="genai-response-area" class="min-h-[100px] text-gray-600">
+                        <p class="italic text-gray-400">Select a prompt to see the AI's response...</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+    
+    <!-- KPI Calculation Modal -->
+    <div id="kpi-modal-backdrop"></div>
+    <div id="kpi-modal" class="w-full max-w-lg bg-white rounded-lg shadow-xl p-6">
+        <div class="flex justify-between items-center mb-4">
+            <h3 id="kpi-modal-title" class="text-lg font-bold text-gray-800"></h3>
+            <button id="kpi-modal-close" class="text-gray-400 hover:text-gray-600">
+                <i data-lucide="x" class="w-6 h-6"></i>
+            </button>
+        </div>
+        <div id="kpi-modal-content" class="text-gray-600 space-y-2">
+        </div>
+    </div>
+
+
+    <script>
+        lucide.createIcons();
+
+        // --- NAVIGATION LOGIC ---
+        const navLinks = document.querySelectorAll('.nav-link');
+        const views = document.querySelectorAll('.view');
+        navLinks.forEach(link => {
+            link.addEventListener('click', (e) => {
+                e.preventDefault();
+                const targetId = link.getAttribute('data-target');
+                navLinks.forEach(l => l.classList.remove('active'));
+                link.classList.add('active');
+                views.forEach(view => {
+                    view.classList.remove('active');
+                    if (view.id === targetId) {
+                        view.classList.add('active');
+                    }
+                });
+            });
+        });
+
+        // --- CHARTS ---
+        new Chart(document.getElementById('zoneCongestionChart').getContext('2d'), {
+            type: 'bar',
+            data: { labels: ['Zone A', 'Zone B', 'Zone C', 'Zone D'], datasets: [{ label: 'Congestion Index', data: [25, 40, 75, 30], backgroundColor: ['#a5b4fc', '#a5b4fc', '#ef4444', '#a5b4fc'] }] },
+            options: { indexAxis: 'y', responsive: true, plugins: { legend: { display: false }}, scales: { x: { max: 100 }}}
+        });
+
+        new Chart(document.getElementById('headcountStatusChart').getContext('2d'), {
+            type: 'doughnut',
+            data: {
+                labels: ['On-Task', 'On Break', 'Indirect Task'],
+                datasets: [{
+                    data: [128, 14, 10],
+                    backgroundColor: ['#4f46e5', '#a5b4fc', '#e5e7eb'],
+                    borderColor: '#ffffff'
+                }]
+            },
+            options: { responsive: true, plugins: { legend: { position: 'bottom' }}}
+        });
+        
+        new Chart(document.getElementById('coverageChart').getContext('2d'), {
+            type: 'bar',
+            data: { labels: ['Receiving', 'Picking', 'Packing', 'Loading'], datasets: [ { label: 'Required FTEs', data: [15, 60, 35, 12], backgroundColor: '#9ca3af' }, { label: 'Planned FTEs', data: [15, 58, 36, 12], backgroundColor: '#4f46e5' } ] },
+            options: { responsive: true, plugins: { legend: { position: 'bottom' }}}
+        });
+
+        new Chart(document.getElementById('productivityChart').getContext('2d'), {
+            type: 'line',
+            data: { labels: ['08:00', '09:00', '10:00', '11:00', '12:00', '13:00'], datasets: [{ label: 'Avg. UPH', data: [110, 118, 125, 122, 130, 128], borderColor: '#4f46e5', tension: 0.4, fill: true }, { label: 'Labor Standard', data: [120, 120, 120, 120, 120, 120], borderColor: '#ef4444', borderDash: [5, 5] }] },
+            options: { plugins: { legend: { position: 'bottom' }}}
+        });
+
+        new Chart(document.getElementById('laborBreakdownChart').getContext('2d'), {
+            type: 'doughnut',
+            data: {
+                labels: ['Direct Labor', 'Indirect Labor', 'Idle Time'],
+                datasets: [{
+                    data: [89, 8, 3],
+                    backgroundColor: ['#4f46e5', '#a5b4fc', '#e5e7eb'],
+                    borderColor: '#ffffff'
+                }]
+            },
+            options: { responsive: true, plugins: { legend: { position: 'bottom' }}}
+        });
+        
+        new Chart(document.getElementById('skillDistributionChart').getContext('2d'), {
+            type: 'bar',
+            data: { 
+                labels: ['Picker', 'Packer', 'Putaway', 'Receiver', 'MHE Operator'], 
+                datasets: [{ 
+                    label: 'Certified Employees', 
+                    data: [85, 55, 48, 25, 20], 
+                    backgroundColor: '#818cf8' 
+                }] 
+            },
+            options: { indexAxis: 'y', responsive: true, plugins: { legend: { display: false }}}
+        });
+
+        new Chart(document.getElementById('costVarianceChart').getContext('2d'), {
+            type: 'bar',
+            data: { labels: ['Picking', 'Packing', 'Receiving'], datasets: [{ label: 'Cost Variance %', data: [4.2, -2.5, 8.3], backgroundColor: (ctx) => ctx.raw > 0 ? '#ef4444' : '#22c55e' }] },
+            options: { plugins: { legend: { display: false }}}
+        });
+
+        new Chart(document.getElementById('incentiveChart').getContext('2d'), {
+            type: 'line',
+            data: { labels: ['Q1', 'Q2', 'Q3', 'Q4'], datasets: [{ label: 'Payout % of Target', data: [85, 92, 88, 95], borderColor: '#16a34a', tension: 0.4 }] },
+            options: { plugins: { legend: { position: 'bottom' }}}
+        });
+
+        new Chart(document.getElementById('errorRateChart').getContext('2d'), {
+            type: 'bar',
+            data: {
+                labels: ['Picking', 'Packing', 'Putaway', 'Receiving'],
+                datasets: [{
+                    label: 'Error Rate %',
+                    data: [1.2, 0.5, 0.9, 0.3],
+                    backgroundColor: ['#f87171', '#fb923c', '#facc15', '#a3e635']
+                }]
+            },
+            options: { responsive: true, plugins: { legend: { display: false }}}
+        });
+
+        new Chart(document.getElementById('attritionTrendChart').getContext('2d'), {
+            type: 'line',
+            data: { 
+                labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'], 
+                datasets: [{ 
+                    label: 'Monthly Attrition %', 
+                    data: [2.1, 1.8, 2.5, 2.3, 2.8, 2.6], 
+                    borderColor: '#f43f5e',
+                    backgroundColor: 'rgba(244, 63, 94, 0.1)',
+                    fill: true,
+                    tension: 0.4
+                }] 
+            },
+            options: { responsive: true, plugins: { legend: { position: 'bottom' }}}
+        });
+
+        // --- GEN AI LOGIC ---
+        const genaiResponseArea = document.getElementById('genai-response-area');
+        const genaiButtons = document.querySelectorAll('.genai-prompt-btn');
+        const genaiContent = {
+            rca: {
+                title: "Automated Root-Cause Analysis for Rohan Sharma",
+                content: `Rohan Sharma's performance dropped to **72%** in the last hour. Analysis indicates:\n- **Task Type:** 80% of tasks were for the new 'High-Value SKU' putaway process.\n- **Dwell Time:** Average dwell time at bin locations increased by 30s, suggesting uncertainty.\n- **System Errors:** 4 scan-failures were logged on their device.\n\n**Conclusion:** The performance drop is likely due to unfamiliarity with a new process, compounded by potential device issues.`
+            },
+            coach: {
+                title: "Generated Coaching Plan for Fragile Packing",
+                content: "Here is a recommended plan for the 5 employees performing below standard on fragile item packing:\n1. **Group Micro-Learning:** Assign the 3-minute video 'Best Practices for Handling Fragile Goods' immediately.\n2. **On-Floor Supervisor Support:** Have a supervisor shadow each employee for at least two fragile packing tasks this shift to provide real-time feedback.\n3. **Peer Mentoring:** Pair the two lowest-performing employees with top-performers for the next shift to encourage peer-to-peer learning."
+            },
+            process: {
+                title: "Suggested Fix for Zone C Travel Anomaly",
+                content: "The AI has detected that the staging rack for high-volume outbound orders is placed at the end of Zone C, forcing pickers to travel the full length of the aisle for drop-off, even for items picked at the front.\n\n**Recommendation:**\n- **Immediate:** Add a temporary outbound staging pallet near the front of Zone C's main aisle.\n- **Long-Term:** Relocate the permanent outbound staging rack to a central point between Zone B and Zone C to optimize paths for both zones."
+            },
+            plan: {
+                title: "Optimal Cross-Training Plan for Q4 Peak",
+                content: `To increase picking capacity by **15%** before Q4, the AI recommends the following plan:\n- **Train 8 Employees:** Identify the top 8 performers from the 'Putaway' team with the lowest error rates.\n- **Skill to Train:** 'Batch Cart Picking'.\n- **Timeline:** 2-hour training session per employee, to be completed over the next 3 weeks.\n- **Projected Impact:** Increases picker pool by 12%, achieving an estimated **16%** increase in peak throughput capacity with a total training cost of **$1,200**.`
+            }
+        };
+
+        // --- KPI MODAL LOGIC (ENHANCED) ---
+        const kpiModalBackdrop = document.getElementById('kpi-modal-backdrop');
+        const kpiModal = document.getElementById('kpi-modal');
+        const kpiModalTitle = document.getElementById('kpi-modal-title');
+        const kpiModalContent = document.getElementById('kpi-modal-content');
+        const kpiModalClose = document.getElementById('kpi-modal-close');
+        const infoButtons = document.querySelectorAll('.info-btn');
+
+        const kpiDefinitions = {
+            'live-headcount': { title: 'Live Headcount', content: "<strong>Calculation:</strong> A real-time count of all employees who are currently logged in and active ('clocked-in') within the Infor WMS Time and Attendance module.<br><br><strong>Data Source:</strong> Infor WMS Time & Attendance records." },
+            'headcount-status-chart': { title: 'Headcount by Status (Live)', content: "<strong>Calculation:</strong> A visual breakdown of the 'Live Headcount'. The system categorizes each clocked-in employee based on their current real-time status: 'On-Task' (actively engaged in a Work Tracker), 'On Break' (logged for a break), or 'Indirect Task' (performing a non-measured, indirect activity).<br><br><strong>Data Source:</strong> Infor WMS Time & Attendance and Work Tracker modules." },
+            'tasks-queued': { title: 'Tasks Queued', content: "<strong>Calculation:</strong> The total number of individual work tasks generated by the WMS from source documents (like ASNs and Shipment Orders) that are pending assignment to an employee.<br><br><strong>Data Source:</strong> Infor WMS task generation engine, fed by inbound ASNs and outbound Shipment Orders." },
+            'backlog-hours': { title: 'Backlog (Hours)', content: "<strong>Calculation:</strong> The sum of the 'Standard Time' for all tasks currently in the 'Tasks Queued' list. 'Standard Time' is a pre-configured value from the Engineered Labor Standards (ELS) module.<br><br><strong>Data Source:</strong> Infor WMS task queue + ELS module." },
+            'active-exceptions': { title: 'Active Exceptions', content: "<strong>Calculation:</strong> A real-time count of all unresolved issues logged during task execution, such as inventory shortages, damaged goods, or location errors.<br><br><strong>Data Source:</strong> Infor WMS exception handling module." },
+            'overtime-rate': { title: 'Overtime Rate', content: "<strong>Calculation:</strong> (Number of employees currently working beyond their pre-configured shift schedule) / (Total Live Headcount) * 100%.<br><br><strong>Data Source:</strong> Infor WMS Time & Attendance module vs. employee shift schedules." },
+            'absence-rate': { title: 'Absence Rate', content: "<strong>Calculation:</strong> (Number of scheduled employees for the current shift who did not clock-in) / (Total number of employees planned for the shift) * 100%.<br><br><strong>Data Source:</strong> Infor WMS labor schedule vs. actual Time & Attendance records." },
+            'task-flow': { title: 'Task Flow Snapshot', content: "<strong>Calculation:</strong> A summary of key metrics for each major warehouse process.<ul><li><strong>Tasks:</strong> A real-time count of all active 'Work Trackers' assigned to that process.</li><li><strong>Avg Age:</strong> The average time elapsed since the 'Work Trackers' in that process were created.</li><li><strong>SLA Risk:</strong> A derived metric where risk (Low, Med, High) increases as 'Avg Age' approaches a pre-configured SLA time limit for the process.</li><li><strong>Staff:</strong> A real-time count of 'Live Headcount' assigned to the specific employee group for that process.</li></ul><strong>Data Source:</strong> Infor WMS Work Trackers, Time & Attendance, and a configurable SLA module." },
+            'congestion-index': { title: 'Congestion Index by Zone', content: "<strong>Calculation:</strong> A composite score from 0-100 indicating the level of activity and potential for slowdowns in a specific warehouse zone. It is typically calculated by an AI model considering:<br>1. Number of active workers in the zone (from device location).<br>2. Number of active tasks in the zone.<br>3. Number of Material Handling Equipment (MHE) units active in the zone.<br>4. Historical impact on travel time in that zone at similar activity levels.<br><br><strong>Data Source:</strong> Infor WMS device tracking, task location data, and an AI/ML model." },
+            'uph': { title: 'Average UPH (Units Per Hour)', content: "<strong>Calculation:</strong> (Total units picked/packed/received) / (Total 'Direct Time' in hours). 'Direct Time' is time spent on these core tasks, captured in 'Work Trackers', excluding indirect time like breaks.<br><br><strong>Data Source:</strong> Infor WMS Work Tracker records." },
+            'direct-indirect': { title: 'Direct Labor %', content: "<strong>Calculation:</strong> (Total 'Direct Time' from all Work Trackers) / (Total 'Paid Time' from Time & Attendance) * 100%. Direct time is for value-adding tasks; indirect includes meetings, cleaning, etc.<br><br><strong>Data Source:</strong> Infor WMS Work Trackers and Time & Attendance module." },
+            'direct-indirect-chart': { title: 'Direct vs. Indirect Labor Breakdown', content: "<strong>Calculation:</strong> A visual breakdown of the 'Direct Labor %' KPI. It shows the proportion of time spent on 'Direct' (value-adding tasks), 'Indirect' (support tasks), and 'Idle' (unassigned time) based on employee status in the WMS.<br><br><strong>Data Source:</strong> Infor WMS Work Trackers and Time & Attendance module." },
+            'skill-distribution-chart': { title: 'Workforce Skill Distribution', content: "<strong>Calculation:</strong> A count of active employees who have a specific skill or certification assigned to their profile in the system's skill matrix.<br><br><strong>Data Source:</strong> Infor WMS employee profiles and configured skill matrix." },
+            'travel-time': { title: 'Average Travel Time per Task', content: "<strong>Calculation:</strong> The system calculates the average time between the scan confirming task completion at one location and the scan for the start of the next task at another. This is considered non-productive travel time.<br><br><strong>Data Source:</strong> Timestamps from device scans within Infor WMS Work Trackers." },
+            'cross-skill': { title: 'Cross-Skill Coverage', content: "<strong>Calculation:</strong> (Number of logged-in employees with more than one primary skill/role assigned in their profile) / (Total Live Headcount) * 100%.<br><br><strong>Data Source:</strong> Employee profiles and skill matrix configured in Infor WMS." },
+            'training-compliance': { title: 'Training Compliance %', content: "<strong>Calculation:</strong> (Number of active employees who have completed all mandatory training modules) / (Total active employees) * 100%.<br><br><strong>Data Source:</strong> Integration with an **External Learning Management System (LMS) or HRIS**." },
+            'task-reassignment': { title: 'Task Reassignment Rate', content: "<strong>Calculation:</strong> (Number of tasks manually reassigned by a supervisor due to skill mismatch) / (Total tasks assigned) * 100%.<br><br><strong>Data Source:</strong> Infor WMS audit logs for task management, filtering for 'reassignment' reason codes." },
+            'rework-rate': { title: 'Rework Rate', content: "<strong>Calculation:</strong> (Number of tasks specifically generated with a 'rework' type code due to a prior error) / (Total tasks completed) * 100%.<br><br><strong>Data Source:</strong> Infor WMS task generation engine, often triggered by a QC failure." },
+            'coverage-ratio': { title: 'Coverage Ratio', content: "<strong>Calculation:</strong> (Total 'Planned' Full-Time Equivalents (FTEs) from the labor schedule) / (Total 'Required' FTEs forecasted by the AI based on inbound ASNs and outbound Shipment Orders) * 100%.<br><br><strong>Data Source:</strong> Infor WMS labor schedule and AI forecasting module." },
+            'productivity-standard': { title: 'Productivity vs. Labor Standard', content: "<strong>Calculation:</strong> Compares the actual average UPH (from Work Trackers) against the pre-configured 'Standard' UPH from the ELS module for the same set of tasks.<br><br><strong>Data Source:</strong> Infor WMS Work Trackers vs. ELS module." },
+            'cost-of-sales': { title: 'Labor Cost % of Sales', content: "<strong>Calculation:</strong> (Total labor cost for a period) / (Total sales revenue for that period) * 100%.<br><br><strong>Data Source:</strong> Infor WMS 'Actual Time' data multiplied by wage rates from an **External HRIS/Payroll System**. Sales revenue is from an **External ERP System**." },
+            'cost-per-unit': { title: 'Cost Per Unit Shipped', content: "<strong>Calculation:</strong> (Total labor cost for a period) / (Total units confirmed as shipped in the WMS for that period).<br><br><strong>Data Source:</strong> Infor WMS 'Actual Time' & shipment data + **External HRIS/Payroll System** for wage rates." },
+            'attrition-cost': { title: 'Attrition Cost (YTD)', content: "<strong>Calculation:</strong> (Count of employees terminated Year-to-Date) * (A pre-configured average cost-per-hire).<br><br><strong>Data Source:</strong> Employee master data from an **External HRIS System** and a configurable cost variable." },
+            'attrition-chart': { title: 'Monthly Attrition Rate Trend', content: "<strong>Calculation:</strong> (Number of employees who terminated in a given month) / (Average number of employees during that month) * 100%. Plotted over time to show trends.<br><br><strong>Data Source:</strong> Employee start and end dates from an **External HRIS System**." },
+            'ls-compliance': { title: 'LS Compliance %', content: "<strong>Calculation:</strong> (Number of completed 'Work Trackers' where 'Actual Time' <= 'Standard Time') / (Total completed 'Work Trackers') * 100%.<br><br><strong>Data Source:</strong> Infor WMS Work Trackers vs. ELS module." },
+            'task-error-rate': { title: 'Task Error Rate %', content: "<strong>Calculation:</strong> (Number of Work Trackers with at least one error code logged during execution) / (Total completed Work Trackers) * 100%.<br><br><strong>Data Source:</strong> Infor WMS exception logs linked to Work Trackers." },
+            'task-error-chart': { title: 'Task Error Rate by Process', content: "<strong>Calculation:</strong> This graph breaks down the 'Task Error Rate %' by the primary process (e.g., Picking, Packing). It allows for the identification of which process steps are most prone to quality issues.<br><br><strong>Data Source:</strong> Infor WMS exception logs linked to Work Trackers, grouped by process type." },
+            'exceptions-resolved': { title: 'Exceptions Resolved On-Time %', content: "<strong>Calculation:</strong> (Number of exception cases closed within the target resolution time) / (Total exception cases raised) * 100%.<br><br><strong>Data Source:</strong> Infor WMS exception management module with configured SLAs." },
+            'sla-compliance-3pl': { title: 'SLA Compliance (3PL)', content: "<strong>Calculation:</strong> (Number of 3PL-managed tasks completed within contractual SLA) / (Total 3PL-managed tasks) * 100%.<br><br><strong>Data Source:</strong> Infor WMS Work Trackers filtered for 3PL users vs. configured 3PL SLA module." },
+            'cost-variance': { title: 'Labor Cost Variance', content: "<strong>Calculation:</strong> ((Actual Labor Cost - Planned/Budgeted Labor Cost) / Planned Labor Cost) * 100%. 'Actual Cost' is calculated from 'Actual Time' and wage rates. 'Planned Cost' comes from the labor budget.<br><br><strong>Data Source:</strong> Infor WMS 'Actual Time' data + **External HRIS** for wages + Pre-loaded labor budget." },
+            'incentive-payout': { title: 'Incentive Payout vs. Target', content: "<strong>Calculation:</strong> (Total incentive amount actually paid out based on performance) / (Total possible incentive if all performance targets were met) * 100%.<br><br><strong>Data Source:</strong> Infor WMS performance data run against the rules in the configured incentive module." },
+            'forecast-accuracy': { title: 'Labor Forecast Accuracy', content: "<strong>Calculation:</strong> Calculated using Mean Absolute Percentage Error (MAPE) by comparing the AI's predicted labor hours (based on ASN/Shipment Order volume) against the actual hours recorded.<br><br><strong>Data Source:</strong> Infor WMS AI module vs. Time & Attendance records." },
+            'bottleneck-forecast': { title: 'Bottleneck Forecast', content: "<strong>Calculation:</strong> An AI model analyzes the current task queue size, standard times (from ELS), and live staff allocation per process to predict where the task backlog will exceed the processing capacity of the assigned staff.<br><br><strong>Data Source:</strong> Infor WMS task queue, ELS, and live employee status." },
+            'fatigue-index': { title: 'Fatigue Index Score', content: "<strong>Calculation:</strong> An AI-driven score derived from factors like consecutive hours worked, overtime duration, break compliance (all from Time & Attendance), and the physical/mental complexity of assigned tasks (from ELS).<br><br><strong>Data Source:</strong> Infor WMS Time & Attendance, ELS, and AI module." },
+            'staffing-rec': { title: 'Dynamic Staffing Recommendation', content: "<strong>Calculation:</strong> An AI recommendation triggered by a bottleneck forecast. It identifies the best-suited employees to reassign by querying the employee skill matrix for staff in less critical roles who are certified for the bottlenecked role.<br><br><strong>Data Source:</strong> Infor WMS AI module, employee skill matrix, and live employee status." },
+            'top-training-opp': { title: 'Top Training Opportunity', content: "<strong>Calculation:</strong> An ML model analyzes performance data (UPH, error rates, time per task) for all employees across all task types. It identifies the specific task with the highest number of employees performing significantly below the 'Labor Standard'.<br><br><strong>Data Source:</strong> Infor WMS Work Trackers, ELS, and an ML-driven pattern recognition module." },
+            'top-process-anomaly': { title: 'Top Process Anomaly', content: "<strong>Calculation:</strong> An ML model analyzes thousands of 'Work Tracker' records, including task durations and travel times between locations. It establishes a baseline for the most efficient processes and flags the deviation with the largest negative impact on overall productivity.<br><br><strong>Data Source:</strong> Infor WMS Work Trackers, location data, and an ML anomaly detection model." },
+        };
+
+
+        function openModal(kpi) {
+            const data = kpiDefinitions[kpi];
+            if (data) {
+                kpiModalTitle.textContent = data.title;
+                kpiModalContent.innerHTML = data.content;
+                kpiModalBackdrop.style.display = 'block';
+                kpiModal.style.display = 'block';
+            }
+        }
+
+        function closeModal() {
+            kpiModalBackdrop.style.display = 'none';
+            kpiModal.style.display = 'none';
+        }
+
+        infoButtons.forEach(button => {
+            button.addEventListener('click', () => {
+                const kpi = button.dataset.kpi;
+                openModal(kpi);
+            });
+        });
+
+        kpiModalClose.addEventListener('click', closeModal);
+        kpiModalBackdrop.addEventListener('click', closeModal);
+        
+        genaiButtons.forEach(button => {
+            button.addEventListener('click', () => {
+                const type = button.dataset.type;
+                const data = genaiContent[type];
+                
+                const formattedContent = `
+                    <p class="font-bold text-gray-800 mb-2">${data.title}</p>
+                    <div class="prose prose-sm max-w-none text-gray-600">
+                        ${data.content.replace(/\n/g, '<br>').replace(/\*\*(.*?)\*\*/g, '<strong class="text-indigo-600">$1</strong>')}
+                    </div>
+                `;
+                genaiResponseArea.innerHTML = formattedContent;
+            });
+        });
+
+    </script>
+</body>
+</html>
+
