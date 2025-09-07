@@ -1,0 +1,358 @@
+<!DOCTYPE html>
+<html lang="en" class="scroll-smooth">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Intelligent Warehouse Operations Dashboard</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f8f9fa;
+        }
+        .card {
+            background-color: #ffffff;
+            border: 1px solid #e5e7eb;
+            box-shadow: 0 1px 3px 0 rgb(0 0 0 / 0.05), 0 1px 2px -1px rgb(0 0 0 / 0.05);
+            position: relative;
+        }
+        .kpi-card h3, .metric-card h3, .process-card h3 {
+            font-size: 0.9rem;
+            font-weight: 500;
+            color: #6b7280;
+        }
+        .kpi-card p.value, .metric-card p.value, .process-card p.value {
+            font-size: 2.25rem;
+            font-weight: 700;
+            color: #111827;
+        }
+        .kpi-card .change, .metric-card .change {
+            font-size: 0.9rem;
+            color: #6b7280;
+        }
+        .chart-container {
+            height: 300px;
+        }
+        .chat-bubble { max-width: 80%; padding: 10px 15px; border-radius: 15px; margin-bottom: 10px; }
+        .chat-user { background-color: #e5e7eb; color: #1f2937; align-self: flex-end; border-bottom-right-radius: 5px; }
+        .chat-ai { background-color: #2563eb; color: white; align-self: flex-start; border-bottom-left-radius: 5px; }
+        .chat-suggestion { cursor: pointer; background-color: #fff; color: #2563eb; border: 1px solid #dbeafe; padding: 8px 12px; border-radius: 20px; transition: all 0.2s ease; font-weight: 500; }
+        .chat-suggestion:hover { background-color: #eff6ff; }
+        .typing-indicator span { display: inline-block; width: 8px; height: 8px; border-radius: 50%; background-color: #9ca3af; animation: typing 1s infinite; }
+        .typing-indicator span:nth-child(2) { animation-delay: 0.2s; }
+        .typing-indicator span:nth-child(3) { animation-delay: 0.4s; }
+        @keyframes typing { 0% { transform: translateY(0); } 50% { transform: translateY(-4px); } 100% { transform: translateY(0); } }
+        .modal-content-strong { font-weight: 600; color: #1e3a8a; }
+        .metric-value { font-size: 1.25rem; font-weight: 700; }
+        .metric-label { font-size: 0.75rem; color: #6b7280; }
+        .tab-button.active {
+            border-bottom-color: #2563eb;
+            color: #2563eb;
+            font-weight: 600;
+        }
+        .info-btn {
+            position: absolute;
+            top: 0.75rem;
+            right: 0.75rem;
+            color: #9ca3af;
+            transition: color 0.2s;
+        }
+        .info-btn:hover {
+            color: #1f2937;
+        }
+    </style>
+</head>
+<body class="text-gray-800">
+
+    <div id="dashboard" class="p-4 sm:p-6 lg:p-8">
+        <!-- Header -->
+        <header class="flex flex-wrap justify-between items-center mb-6 pb-4 border-b border-gray-200">
+            <div class="flex items-center space-x-4">
+                <img src="https://www.mydin.my/wp-content/uploads/2023/12/logo-mydin.png" alt="Mydin Logo" class="h-12" onerror="this.onerror=null; this.src='https://placehold.co/150x50/ffffff/000000?text=Mydin';">
+            </div>
+            <div class="text-center mt-4 sm:mt-0">
+                <h1 class="text-2xl sm:text-3xl font-bold text-gray-900">Intelligent Warehouse Operations</h1>
+                <p class="text-sm text-gray-500">Enterprise-Level Supply Chain Visibility</p>
+            </div>
+            <div class="text-right text-sm text-gray-600">
+                <p id="live-time"></p>
+                <p class="font-semibold">Malaysia Operations - Live</p>
+            </div>
+        </header>
+
+        <!-- Main Content -->
+        <main>
+            <!-- Tab Navigation -->
+            <div class="mb-6 border-b border-gray-200">
+                <nav class="flex -mb-px space-x-6" aria-label="Tabs">
+                    <button id="operations-tab" onclick="changeTab('operations')" class="tab-button active py-3 px-1 border-b-2 font-medium text-sm border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 transition-colors">
+                        Warehouse Operations
+                    </button>
+                    <button id="ai-tab" onclick="changeTab('ai')" class="tab-button py-3 px-1 border-b-2 font-medium text-sm border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 transition-colors">
+                        AI & Analytics
+                    </button>
+                </nav>
+            </div>
+
+            <!-- Tab Panels -->
+            <div>
+                <!-- Operations Tab Panel -->
+                <div id="operations-content" class="tab-panel space-y-8">
+                    <section id="kpis">
+                        <h2 class="text-xl font-semibold mb-4 text-gray-900">Key Performance Snapshot: The Cloud Advantage</h2>
+                        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+                            <div class="kpi-card card rounded-lg p-5"><button onclick="showModal('Projected Annual Savings', savingsModalContent)" class="info-btn"><i data-lucide="info" class="w-5 h-5"></i></button><h3 class="mb-1">Projected Annual Savings</h3><p class="value">RM 4.2M</p><p class="change"><span class="text-green-600 font-semibold">18%</span> Reduction in OPEX</p></div>
+                            <div class="kpi-card card rounded-lg p-5"><button onclick="showModal('Warehouse Throughput', throughputModalContent)" class="info-btn"><i data-lucide="info" class="w-5 h-5"></i></button><h3 class="mb-1">Warehouse Throughput</h3><p class="value">+35%</p><p class="change">Orders Processed Per Hour</p></div>
+                            <div class="kpi-card card rounded-lg p-5"><button onclick="showModal('Order Accuracy', accuracyModalContent)" class="info-btn"><i data-lucide="info" class="w-5 h-5"></i></button><h3 class="mb-1">Order Accuracy</h3><p class="value">99.8%</p><p class="change">From 97.5% (On-Prem)</p></div>
+                            <div class="kpi-card card rounded-lg p-5"><button onclick="showModal('On-Time In-Full (OTIF)', otifModalContent)" class="info-btn"><i data-lucide="info" class="w-5 h-5"></i></button><h3 class="mb-1">On-Time In-Full (OTIF)</h3><p class="value">98.5%</p><p class="change">Improved Store Service Levels</p></div>
+                        </div>
+                    </section>
+                    <section id="operations-intelligence">
+                         <h2 class="text-xl font-semibold mb-4 text-gray-900 flex items-center">
+                            Multi-Warehouse Command Center
+                            <button onclick="showModal('Throughput Status Explained', throughputStatusModalContent)" class="ml-2 text-gray-400 hover:text-gray-800 transition-colors">
+                                <i data-lucide="help-circle" class="w-5 h-5"></i>
+                            </button>
+                        </h2>
+                        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                            <div class="card rounded-lg p-6 space-y-4"><div class="flex justify-between items-center"><h3 class="text-lg font-bold">Shah Alam DC (Central)</h3><div class="relative w-24 h-24 -mt-4 -mr-2"><canvas id="throughputChartSA"></canvas><div class="absolute inset-0 flex flex-col items-center justify-center pointer-events-none" style="margin-bottom: 1rem;"><span class="text-2xl font-bold text-gray-800">85%</span><span class="text-xs font-semibold" style="color: #10b981;">High</span></div></div></div><div class="grid grid-cols-3 gap-4 text-center"><div><p class="metric-value text-gray-900">3.5<span class="text-sm">hrs</span></p><p class="metric-label">Dock to Stock</p></div><div><p class="metric-value text-gray-900">99.2%</p><p class="metric-label">Fulfillment Rate</p></div><div><p class="metric-value text-gray-900">215</p><p class="metric-label">Orders/Hour</p></div></div><div><p class="metric-label uppercase font-semibold mb-1">ASN Status (Inbound)</p><div class="w-full bg-gray-200 rounded-full h-2.5 flex"><div class="bg-green-500 h-2.5 rounded-l-full" style="width: 75%" title="Received"></div><div class="bg-yellow-400 h-2.5" style="width: 20%" title="Expected"></div><div class="bg-red-500 h-2.5 rounded-r-full" style="width: 5%" title="Late"></div></div></div><div><p class="metric-label uppercase font-semibold mb-1">Shipment Orders (Outbound)</p><div class="w-full bg-gray-200 rounded-full h-2.5 flex"><div class="bg-blue-500 h-2.5 rounded-l-full" style="width: 85%" title="Shipped"></div><div class="bg-cyan-400 h-2.5" style="width: 10%" title="Packed"></div><div class="bg-orange-400 h-2.5 rounded-r-full" style="width: 5%" title="Picking"></div></div></div></div>
+                            <div class="card rounded-lg p-6 space-y-4"><div class="flex justify-between items-center"><h3 class="text-lg font-bold">Bertam DC (North)</h3><div class="relative w-24 h-24 -mt-4 -mr-2"><canvas id="throughputChartBT"></canvas><div class="absolute inset-0 flex flex-col items-center justify-center pointer-events-none" style="margin-bottom: 1rem;"><span class="text-2xl font-bold text-gray-800">92%</span><span class="text-xs font-semibold" style="color: #f59e0b;">Critical</span></div></div></div><div class="grid grid-cols-3 gap-4 text-center"><div><p class="metric-value text-gray-900">4.2<span class="text-sm">hrs</span></p><p class="metric-label">Dock to Stock</p></div><div><p class="metric-value text-gray-900">98.9%</p><p class="metric-label">Fulfillment Rate</p></div><div><p class="metric-value text-gray-900">180</p><p class="metric-label">Orders/Hour</p></div></div><div><p class="metric-label uppercase font-semibold mb-1">ASN Status (Inbound)</p><div class="w-full bg-gray-200 rounded-full h-2.5 flex"><div class="bg-green-500 h-2.5 rounded-l-full" style="width: 65%" title="Received"></div><div class="bg-yellow-400 h-2.5" style="width: 30%" title="Expected"></div><div class="bg-red-500 h-2.5 rounded-r-full" style="width: 5%" title="Late"></div></div></div><div><p class="metric-label uppercase font-semibold mb-1">Shipment Orders (Outbound)</p><div class="w-full bg-gray-200 rounded-full h-2.5 flex"><div class="bg-blue-500 h-2.5 rounded-l-full" style="width: 80%" title="Shipped"></div><div class="bg-cyan-400 h-2.5" style="width: 15%" title="Packed"></div><div class="bg-orange-400 h-2.5 rounded-r-full" style="width: 5%" title="Picking"></div></div></div></div>
+                            <div class="card rounded-lg p-6 space-y-4"><div class="flex justify-between items-center"><h3 class="text-lg font-bold">Pelangi DC (South)</h3><div class="relative w-24 h-24 -mt-4 -mr-2"><canvas id="throughputChartPL"></canvas><div class="absolute inset-0 flex flex-col items-center justify-center pointer-events-none" style="margin-bottom: 1rem;"><span class="text-2xl font-bold text-gray-800">78%</span><span class="text-xs font-semibold" style="color: #3b82f6;">Normal</span></div></div></div><div class="grid grid-cols-3 gap-4 text-center"><div><p class="metric-value text-gray-900">3.8<span class="text-sm">hrs</span></p><p class="metric-label">Dock to Stock</p></div><div><p class="metric-value text-gray-900">99.5%</p><p class="metric-label">Fulfillment Rate</p></div><div><p class="metric-value text-gray-900">195</p><p class="metric-label">Orders/Hour</p></div></div><div><p class="metric-label uppercase font-semibold mb-1">ASN Status (Inbound)</p><div class="w-full bg-gray-200 rounded-full h-2.5 flex"><div class="bg-green-500 h-2.5 rounded-l-full" style="width: 80%" title="Received"></div><div class="bg-yellow-400 h-2.5" style="width: 18%" title="Expected"></div><div class="bg-red-500 h-2.5 rounded-r-full" style="width: 2%" title="Late"></div></div></div><div><p class="metric-label uppercase font-semibold mb-1">Shipment Orders (Outbound)</p><div class="w-full bg-gray-200 rounded-full h-2.5 flex"><div class="bg-blue-500 h-2.5 rounded-l-full" style="width: 90%" title="Shipped"></div><div class="bg-cyan-400 h-2.5" style="width: 8%" title="Packed"></div><div class="bg-orange-400 h-2.5 rounded-r-full" style="width: 2%" title="Picking"></div></div></div></div>
+                        </div>
+                    </section>
+                     <section id="process-metrics">
+                        <h2 class="text-xl font-semibold mb-4 text-gray-900">Process-Level Efficiency Metrics</h2>
+                        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+                            <div class="process-card card rounded-lg p-5 text-center"><button onclick="showModal('Average Putaway Time', putawayTimeModalContent)" class="info-btn"><i data-lucide="info" class="w-5 h-5"></i></button><i data-lucide="archive-restore" class="mx-auto text-blue-600 w-8 h-8 mb-2"></i><p class="value">28<small class="text-lg"> min</small></p><h3 class="text-sm font-medium text-gray-500">Avg. Putaway Time</h3></div>
+                            <div class="process-card card rounded-lg p-5 text-center"><button onclick="showModal('Pending Replenishments', pendingReplenishmentsModalContent)" class="info-btn"><i data-lucide="info" class="w-5 h-5"></i></button><i data-lucide="arrow-down-up" class="mx-auto text-blue-600 w-8 h-8 mb-2"></i><p class="value">14</p><h3 class="text-sm font-medium text-gray-500">Pending Replenishments</h3></div>
+                            <div class="process-card card rounded-lg p-5 text-center"><button onclick="showModal('Lines Picked Per Hour (LPH)', lphModalContent)" class="info-btn"><i data-lucide="info" class="w-5 h-5"></i></button><i data-lucide="list-checks" class="mx-auto text-blue-600 w-8 h-8 mb-2"></i><p class="value">125</p><h3 class="text-sm font-medium text-gray-500">Lines Picked Per Hour</h3></div>
+                            <div class="process-card card rounded-lg p-5 text-center"><button onclick="showModal('Returns Processing Time', returnsTimeModalContent)" class="info-btn"><i data-lucide="info" class="w-5 h-5"></i></button><i data-lucide="undo-2" class="mx-auto text-blue-600 w-8 h-8 mb-2"></i><p class="value">6.5<small class="text-lg"> hrs</small></p><h3 class="text-sm font-medium text-gray-500">Returns Processing Time</h3></div>
+                        </div>
+                    </section>
+                    <section id="deeper-insights">
+                        <h2 class="text-xl font-semibold mb-4 text-gray-900">Deeper Operational Insights</h2>
+                        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+                            <div class="process-card card rounded-lg p-5 text-center"><button onclick="showModal('Inventory Accuracy', inventoryAccuracyModalContent)" class="info-btn"><i data-lucide="info" class="w-5 h-5"></i></button><i data-lucide="clipboard-check" class="mx-auto text-blue-600 w-8 h-8 mb-2"></i><p class="value">99.92%</p><h3 class="text-sm font-medium text-gray-500">Inventory Accuracy</h3></div>
+                            <div class="process-card card rounded-lg p-5 text-center"><button onclick="showModal('Receiving Accuracy', receivingAccuracyModalContent)" class="info-btn"><i data-lucide="info" class="w-5 h-5"></i></button><i data-lucide="package-check" class="mx-auto text-blue-600 w-8 h-8 mb-2"></i><p class="value">99.6%</p><h3 class="text-sm font-medium text-gray-500">Receiving Accuracy</h3></div>
+                            <div class="process-card card rounded-lg p-5 text-center"><button onclick="showModal('Average Pick Time per Order', avgPickTimeModalContent)" class="info-btn"><i data-lucide="info" class="w-5 h-5"></i></button><i data-lucide="timer" class="mx-auto text-blue-600 w-8 h-8 mb-2"></i><p class="value">8.2<small class="text-lg"> min</small></p><h3 class="text-sm font-medium text-gray-500">Avg. Pick Time / Order</h3></div>
+                            <div class="process-card card rounded-lg p-5 text-center"><button onclick="showModal('Dock Door Utilization', dockDoorModalContent)" class="info-btn"><i data-lucide="info" class="w-5 h-5"></i></button><i data-lucide="truck" class="mx-auto text-blue-600 w-8 h-8 mb-2"></i><p class="value">91%</p><h3 class="text-sm font-medium text-gray-500">Dock Door Utilization</h3></div>
+                        </div>
+                    </section>
+                </div>
+
+                <!-- AI Tab Panel -->
+                <div id="ai-content" class="tab-panel hidden space-y-8">
+                    <section id="ai-deep-dive">
+                        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                            <div class="card rounded-lg p-6">
+                                <h3 class="text-lg font-semibold text-gray-900 mb-2 flex items-center">
+                                    <i data-lucide="shield-check" class="text-blue-600 mr-2"></i> 
+                                    AI-Powered Stockout Prevention
+                                    <button onclick="showModal('How AI Stockout Prevention Works', stockoutModalContent)" class="ml-2 text-gray-400 hover:text-gray-800 transition-colors">
+                                        <i data-lucide="help-circle" class="w-5 h-5"></i>
+                                    </button>
+                                </h3>
+                                <p class="text-sm text-gray-600 mb-4">Proactive alerts for high-velocity items across the retail network.</p>
+                                <div class="space-y-3">
+                                    <div class="p-3 bg-gray-50 rounded-lg border border-gray-200"><div class="flex justify-between items-start"><div><p class="font-bold">Beras Jasmine Super 5 (10kg)</p><p class="text-xs text-gray-500">At Mydin USJ, Subang Jaya</p></div><span class="text-xs font-bold px-2 py-1 rounded-full bg-green-100 text-green-800">Averted</span></div><div class="text-sm mt-2"><p><span class="font-semibold">Trigger:</span> Unexpected sales spike (+45% week-on-week).</p><p><span class="font-semibold">Action:</span> Auto-replenishment order #R9831 created and prioritized at Shah Alam DC.</p></div></div>
+                                    <div class="p-3 bg-gray-50 rounded-lg border border-gray-200"><div class="flex justify-between items-start"><div><p class="font-bold">Minyak Masak Saji (5kg)</p><p class="text-xs text-gray-500">At Mydin Gombak, Selangor</p></div><span class="text-xs font-bold px-2 py-1 rounded-full bg-green-100 text-green-800">Averted</span></div><div class="text-sm mt-2"><p><span class="font-semibold">Trigger:</span> Social Media Trend: 'Resepi Ayam Goreng Viral'.</p><p><span class="font-semibold">Action:</span> Suggested cross-docking from inbound shipment to fulfill urgent order.</p></div></div>
+                                    <div class="p-3 bg-gray-50 rounded-lg border border-gray-200"><div class="flex justify-between items-start"><div><p class="font-bold">Milo Activ-Go (1kg)</p><p class="text-xs text-gray-500">At Mydin Bukit Mertajam, Penang</p></div><span class="text-xs font-bold px-2 py-1 rounded-full bg-green-100 text-green-800">Averted</span></div><div class="text-sm mt-2"><p><span class="font-semibold">Trigger:</span> 'Back to School' promotion demand forecast exceeded.</p><p><span class="font-semibold">Action:</span> Stock transfer from a slower-selling nearby store was initiated by the system.</p></div></div>
+                                </div>
+                            </div>
+                            <div class="card rounded-lg p-6 flex flex-col"><h3 class="text-lg font-semibold mb-4 flex items-center text-gray-900"><i data-lucide="brain-circuit" class="mr-2 text-blue-600"></i>Ask Infor Coleman AI Assistant</h3><div id="chat-window" class="flex-grow h-80 overflow-y-auto p-4 bg-gray-50 rounded-lg border border-gray-200 flex flex-col space-y-2 mb-4"><div class="chat-bubble chat-ai">Hello! I'm your Gen AI warehouse assistant. How can I help you optimize Mydin's operations today?</div></div>
+                            <div id="chat-suggestions" class="flex flex-wrap gap-2">
+                                <div class="chat-suggestion" onclick="askAI(this, 'Forecast demand for Kurma during Ramadan.', `Based on my analysis, I project a <strong>15% demand increase</strong> for Kurma and related festive items during the upcoming Ramadan period. I have already adjusted labor forecasts for all DCs and recommend increasing stock levels at Klang Valley locations by 8%.<br><br><strong>Forecast Details:</strong><br><ul class='list-disc list-inside ml-2'><li><strong>Confidence Level:</strong> 92%</li><li><strong>Data Sources:</strong> 5 years of historical sales (ERP), real-time social media sentiment, and economic indicators.</li><li><strong>Algorithms:</strong> Time-Series (ARIMA) for seasonality, Regression Analysis for external factors, and NLP for social media trends.</li></ul>`)">Forecast Ramadan demand</div>
+                                <div class="chat-suggestion" onclick="askAI(this, 'Why were there picking delays yesterday?', `I've identified the root cause of yesterday's picking delays. The primary issue was <strong>congestion in Aisles B5-B8</strong> at the Shah Alam DC between 2 PM and 4 PM.<br><br><strong>Analysis Details:</strong><br><ul class='list-disc list-inside ml-2'><li><strong>Data Sources:</strong> Real-time picker path data from WMS, order density heatmaps, and putaway task logs.</li><li><strong>Algorithm:</strong> A spatial analysis algorithm detected an abnormal convergence of pickers and putaway operators in the same area.</li><li><strong>Recommendation:</strong> I recommend implementing a temporary one-way flow for these aisles during peak hours. This should improve efficiency in that zone by an estimated 20%.</li></ul>`)">Analyze picking delays</div>
+                                <div class="chat-suggestion" onclick="askAI(this, 'Simulate a 2-hour port delay\'s impact.', `I have run a simulation for a 2-hour delay at Port Klang. The model predicts a direct impact on <strong>120 high-volume SKUs</strong>, potentially causing stockouts at 15 Klang Valley stores within 48 hours.<br><br><strong>Simulation Details:</strong><br><ul class='list-disc list-inside ml-2'><li><strong>Data Sources:</strong> Live vessel tracking data (via API), ASN data for incoming containers, current DC inventory (WMS), and store-level sales velocity.</li><li><strong>Algorithm:</strong> A Monte Carlo simulation was used to model the ripple effects through the supply chain.</li><li><strong>Action Plan:</strong> I have drafted a priority-receiving plan that re-routes 2 inbound trucks and re-prioritizes putaway tasks. This plan is projected to mitigate <strong>90% of potential stockouts.</strong> <a href='#' class='font-bold underline'>[View Plan]</a></li></ul>`)">Simulate port delay</div>
+                            </div></div>
+                        </div>
+                    </section>
+                    <section id="analytics">
+                        <h2 class="text-xl font-semibold mb-4 text-gray-900">Strategic Performance & Financial Analytics</h2>
+                        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-6">
+                           <div class="metric-card card rounded-lg p-5"><button onclick="showModal('Inventory Turnover', inventoryTurnoverModalContent)" class="info-btn"><i data-lucide="info" class="w-5 h-5"></i></button><h3 class="mb-1">Inventory Turnover</h3><p class="value">8.2</p><p class="change">annually</p></div>
+                           <div class="metric-card card rounded-lg p-5"><button onclick="showModal('Cost Per Order Shipped', costPerOrderModalContent)" class="info-btn"><i data-lucide="info" class="w-5 h-5"></i></button><h3 class="mb-1">Cost Per Order Shipped</h3><p class="value">RM 5.80</p><p class="change"><span class="text-red-600 font-semibold">-12%</span> vs. Last Quarter</p></div>
+                           <div class="metric-card card rounded-lg p-5"><button onclick="showModal('Perfect Order Rate', perfectOrderModalContent)" class="info-btn"><i data-lucide="info" class="w-5 h-5"></i></button><h3 class="mb-1">Perfect Order Rate</h3><p class="value">97.2%</p><p class="change"><span class="text-green-600 font-semibold">+1.5%</span> Month-over-Month</p></div>
+                           <div class="metric-card card rounded-lg p-5"><button onclick="showModal('Labor Productivity', laborProductivityModalContent)" class="info-btn"><i data-lucide="info" class="w-5 h-5"></i></button><h3 class="mb-1">Labor Productivity</h3><p class="value">104%</p><p class="change">to Engineered Standards</p></div>
+                        </div>
+                        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                            <div class="card rounded-lg p-6"><h3 class="text-center mb-2 font-medium text-gray-600">Labor Cost: Forecast vs. Actual</h3><div class="chart-container"><canvas id="laborChart"></canvas></div></div>
+                            <div class="card rounded-lg p-6"><h3 class="text-center mb-2 font-medium text-gray-600">Projected Savings Breakdown</h3><div class="chart-container"><canvas id="savingsChart"></canvas></div></div>
+                        </div>
+                    </section>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Info Modal -->
+    <div id="infoModal" class="fixed inset-0 bg-black bg-opacity-60 flex justify-center items-center p-4 z-50 hidden" onclick="hideModal()">
+        <div class="card rounded-lg p-6 w-full max-w-4xl relative" onclick="event.stopPropagation()">
+            <button onclick="hideModal()" class="absolute top-4 right-4 text-gray-400 hover:text-gray-800 transition-colors"><i data-lucide="x" class="w-6 h-6"></i></button>
+            <h3 id="modalTitle" class="text-xl font-bold mb-4 text-gray-900 flex items-center"></h3>
+            <div id="modalContent" class="space-y-3 text-gray-600 leading-relaxed max-h-[80vh] overflow-y-auto"></div>
+        </div>
+    </div>
+
+    <script>
+        lucide.createIcons();
+
+        function updateTime() {
+            const timeEl = document.getElementById('live-time');
+            if (timeEl) {
+                const now = new Date("2025-09-07T23:28:00"); 
+                timeEl.textContent = `Petaling Jaya, Selangor - ${now.toLocaleString('en-GB', { dateStyle: 'full', timeStyle: 'short' })}`;
+            }
+        }
+        updateTime();
+        
+        // --- Modal Content Definitions ---
+        const savingsModalContent = `<p><strong class="modal-content-strong">How it's derived:</strong> This projection combines: 1) Reduced IT infrastructure costs by moving to the cloud. 2) Labor savings from optimized picking paths. 3) Lower inventory holding costs due to better forecasting. 4) Reduced expedited freight charges.</p><p><strong class="modal-content-strong">The Infor WMS Advantage:</strong> Infor's analytics engine consolidates operational and financial data for accurate cost-to-serve analysis. ML-powered modules for labor and inventory directly generate data to quantify these savings, turning estimates into data-backed projections.</p>`;
+        const throughputModalContent = `<p><strong class="modal-content-strong">How it's derived:</strong> Calculated by dividing total order lines picked, packed, and shipped by the total operational hours. [(Total Lines Shipped) / (Total Hours)].</p><p><strong class="modal-content-strong">The Infor WMS Advantage:</strong> Every process step is time-stamped in Infor WMS. This real-time data identifies bottlenecks. AI features like dynamic task interleaving and optimized pick paths directly increase the number of orders a single worker can process, boosting this metric.</p>`;
+        const accuracyModalContent = `<p><strong class="modal-content-strong">How it's derived:</strong> Calculated as [1 - (Number of order lines with errors / Total order lines shipped)] x 100. An error can be a wrong item, quantity, or damage.</p><p><strong class="modal-content-strong">The Infor WMS Advantage:</strong> Barcode scanning for every item, location, and pallet is enforced by the system, virtually eliminating manual errors. The WMS directs pickers to the exact bin and validates their work, replacing manual checks with a reliable, system-driven process.</p>`;
+        const otifModalContent = `<p><strong class="modal-content-strong">How it's derived:</strong> OTIF measures the percentage of orders delivered with the correct items (In-Full) by the scheduled delivery date (On-Time). It's a key measure of retail service level.</p><p><strong class="modal-content-strong">The Infor WMS Advantage:</strong> Infor WMS provides the foundational data. By ensuring order accuracy and throughput, it guarantees the "In-Full" component. Its outbound planning, dock scheduling, and transport integration ensure orders leave on schedule, directly impacting the "On-Time" component.</p>`;
+        const throughputStatusModalContent = `<p class="mb-4">The <strong>Normal, High, and Critical</strong> labels provide an immediate, at-a-glance understanding of the operational pressure each Distribution Center is under. They translate the raw percentage of capacity utilization into a simple, actionable status:</p><div class="overflow-x-auto"><table class="w-full text-sm text-left text-gray-500"><thead class="text-xs text-gray-700 uppercase bg-gray-50"><tr><th scope="col" class="px-6 py-3">Status</th><th scope="col" class="px-6 py-3">Throughput Level</th><th scope="col" class="px-6 py-3">What It Means for Mydin</th><th scope="col" class="px-6 py-3">Management Action</th></tr></thead><tbody><tr class="bg-white border-b"><td class="px-6 py-4 font-medium text-gray-900">Normal</td><td class="px-6 py-4">Sustainable Pace</td><td class="px-6 py-4">The DC is operating at a healthy, efficient rate. Staffing is adequate and workflows are smooth. This is the ideal "business as usual" state.</td><td class="px-6 py-4"><strong>Monitor:</strong> Keep an eye on KPIs, but no immediate intervention is needed. Focus on standard continuous improvement.</td></tr><tr class="bg-gray-50 border-b"><td class="px-6 py-4 font-medium text-gray-900">High</td><td class="px-6 py-4">Peak Performance</td><td class="px-6 py-4">The DC is operating near its maximum planned capacity, likely during a rush. While efficient, there is little buffer for unexpected issues.</td><td class="px-6 py-4"><strong>Be Prepared:</strong> Alert supervisors to the high volume. Ensure staff and equipment are ready for the next shift.</td></tr><tr class="bg-white"><td class="px-6 py-4 font-medium text-gray-900">Critical</td><td class="px-6 py-4">Potential Overload</td><td class="px-6 py-4">This is an alert. The DC is operating beyond its comfortable capacity. This is unsustainable and risks bottlenecks, delays, and burnout.</td><td class="px-6 py-4"><strong>Intervene:</strong> A trigger to act. Use other metrics to diagnose the issue, approve overtime, or reallocate resources to clear the backlog.</td></tr></tbody></table></div><p class="mt-4"><strong class="modal-content-strong">The Infor WMS Advantage:</strong> This provides real-time, proactive insight. It allows Mydin's leadership to see pressure building and make data-driven decisions *before* it impacts store service levels, turning reactive problems into proactive management.</p>`;
+        const stockoutModalContent = `
+            <div class="space-y-6">
+                <div>
+                    <h4 class="font-bold text-lg text-gray-800">How AI Stockout Prevention Works: From Data to Action</h4>
+                    <p class="mt-1">The AI-Powered Stockout Prevention is an orchestrated process that leverages the full power of the Infor OS platform. Here’s how an alert, like the one for a viral recipe, is generated and actioned.</p>
+                </div>
+
+                <div class="p-4 bg-gray-50 rounded-lg border">
+                    <h5 class="font-semibold text-gray-700 flex items-center mb-2"><i data-lucide="database" class="w-5 h-5 mr-2 text-blue-600"></i>Step 1: Data Aggregation</h5>
+                    <p>The process begins by feeding vast amounts of diverse data into the <strong class="modal-content-strong">Infor Data Lake</strong>. The goal is to create a complete picture of every factor that could influence demand.</p>
+                    <ul class="list-disc list-inside ml-4 mt-2 space-y-1">
+                        <li><strong>Internal Data:</strong> Real-time inventory levels from <strong class="font-semibold text-gray-700">Infor WMS</strong>, sales velocity, and historical sales data from Mydin's ERP.</li>
+                        <li><strong>External Data:</strong> Using the <strong class="font-semibold text-gray-700">Infor API Gateway</strong> and <strong class="font-semibold text-gray-700">Infor ION</strong>, the platform connects to the outside world to gather unstructured data, such as social media trends (e.g., a "Resepi Viral"), local event calendars, and news alerts.</li>
+                    </ul>
+                </div>
+                
+                <div class="p-4 bg-gray-50 rounded-lg border">
+                    <h5 class="font-semibold text-gray-700 flex items-center mb-2"><i data-lucide="brain-circuit" class="w-5 h-5 mr-2 text-yellow-600"></i>Step 2: Predictive Analysis</h5>
+                    <p>The collected data is analyzed by sophisticated Machine Learning models within the <strong class="modal-content-strong">Infor Coleman AI Platform</strong>. The AI isn't just looking at what's happening; it's predicting what *will* happen.</p>
+                    <ul class="list-disc list-inside ml-4 mt-2 space-y-1">
+                        <li><strong>Algorithms Used:</strong> A combination of Time-Series Analysis, Anomaly Detection to spot spikes, and Natural Language Processing (NLP) to understand the context of social media trends.</li>
+                        <li><strong>The Insight:</strong> The AI doesn't just see that 'Minyak Masak Saji' is selling fast. It understands <strong class="font-semibold text-gray-700">why</strong> (the viral recipe) and projects a future demand curve, generating a high stockout risk score for specific stores.</li>
+                    </ul>
+                </div>
+
+                <div class="p-4 bg-gray-50 rounded-lg border">
+                     <h5 class="font-semibold text-gray-700 flex items-center mb-2"><i data-lucide="play-circle" class="w-5 h-5 mr-2 text-green-600"></i>Step 3: Automated Workflow & Execution</h5>
+                    <p>A high risk score automatically triggers a pre-configured, intelligent process using <strong class="modal-content-strong">Infor ION Workflow</strong>. This turns the insight into a direct, value-saving action.</p>
+                     <ul class="list-disc list-inside ml-4 mt-2 space-y-1">
+                        <li><strong>Business Logic:</strong> The workflow instantly assesses the situation and determines the optimal solution: Suggest cross-docking? Initiate a stock transfer? Create an urgent replenishment order?</li>
+                        <li><strong>Execution & Notification:</strong> The workflow uses a secure API call to automatically execute the chosen action within <strong class="font-semibold text-gray-700">Infor WMS</strong>. Simultaneously, an <strong class="font-semibold text-gray-700">Infor OS Alert</strong> is sent to the DC manager, informing them of the action taken while ensuring human oversight is always possible.</li>
+                    </ul>
+                </div>
+            </div>`;
+        const putawayTimeModalContent = `<p><strong class="modal-content-strong">How it's derived:</strong> Total time from receiving completion to final putaway confirmation, divided by the number of putaway tasks.</p><p><strong class="modal-content-strong">The Infor WMS Advantage:</strong> The WMS provides system-directed putaway, guiding workers to the most optimal storage location based on velocity and capacity. Every scan is time-stamped, measuring efficiency from dock to stock and making goods available for sale faster.</p>`;
+        const pendingReplenishmentsModalContent = `<p><strong class="modal-content-strong">How it's derived:</strong> A real-time count of active replenishment tasks generated by the system that have not yet been completed.</p><p><strong class="modal-content-strong">The Infor WMS Advantage:</strong> The system uses min/max levels and demand forecasts to proactively create replenishment tasks *before* a pick face is empty. This low number indicates the system is preventing stockouts at the pick face and eliminating picker downtime.</p>`;
+        const lphModalContent = `<p><strong class="modal-content-strong">How it's derived:</strong> Total order lines picked, divided by the total hours worked by all picking staff.</p><p><strong class="modal-content-strong">The Infor WMS Advantage:</strong> This is a core metric tracked by the Infor Labor Management System (LMS). It provides a more granular view of picker productivity than "orders per hour," as it accounts for the varying complexity of orders.</p>`;
+        const returnsTimeModalContent = `<p><strong class="modal-content-strong">How it's derived:</strong> The average time from when a returned item is received at the dock to when it is fully processed and dispositioned (e.g., returned to stock, written off).</p><p><strong class="modal-content-strong">The Infor WMS Advantage:</strong> Infor's reverse logistics module provides a guided, system-driven workflow for returns, ensuring items are inspected, processed, and made available for sale (if applicable) in the shortest possible time, recovering maximum value.</p>`;
+        const inventoryAccuracyModalContent = `<p><strong class="modal-content-strong">How it's derived:</strong> Calculated as [1 - (Sum of absolute inventory discrepancies / Total on-hand inventory)] x 100.</p><p><strong class="modal-content-strong">The Infor WMS Advantage:</strong> Infor WMS facilitates continuous, system-directed cycle counting and real-time inventory adjustments with every scan. This moves Mydin from disruptive annual stock takes to a state of perpetual accuracy, eliminating phantom stock.</p>`;
+        const receivingAccuracyModalContent = `<p><strong class="modal-content-strong">How it's derived:</strong> The percentage of incoming shipment lines received correctly (right item, right quantity, no damage) against the Advanced Shipping Notice (ASN).</p><p><strong class="modal-content-strong">The Infor WMS Advantage:</strong> The WMS enforces a scan-validation process against the ASN for every pallet and carton. Any discrepancy is flagged immediately at the dock door, *before* the stock is put away, ensuring supplier accountability.</p>`;
+        const avgPickTimeModalContent = `<p><strong class="modal-content-strong">How it's derived:</strong> The total time spent on picking tasks (travel, pick, confirm) divided by the total number of orders picked.</p><p><strong class="modal-content-strong">The Infor WMS Advantage:</strong> Every action is time-stamped. The WMS tracks the time from when a picker accepts a task to when they complete it, providing precise data to measure the direct impact of AI-optimized pick paths.</p>`;
+        const dockDoorModalContent = `<p><strong class="modal-content-strong">How it's derived:</strong> The percentage of scheduled time that receiving and shipping docks are actively being used for loading or unloading.</p><p><strong class="modal-content-strong">The Infor WMS Advantage:</strong> Infor’s integrated dock scheduling module tracks appointments and the actual time of carrier arrival/departure. Analytics reveal utilization patterns, helping to prevent costly truck queuing and optimize labor scheduling.</p>`;
+        const inventoryTurnoverModalContent = `<p><strong class="modal-content-strong">How it's derived:</strong> Cost of Goods Sold (COGS) divided by the Average Inventory Value for the period.</p><p><strong class="modal-content-strong">The Infor WMS Advantage:</strong> By integrating with Mydin's ERP for COGS, the WMS provides the hyper-accurate, real-time Average Inventory Value. This transforms turnover from a high-level estimate into a reliable, strategic metric for financial health.</p>`;
+        const costPerOrderModalContent = `<p><strong class="modal-content-strong">How it's derived:</strong> Total warehouse operating costs (labor, utilities, supplies) divided by the total number of orders shipped.</p><p><strong class="modal-content-strong">The Infor WMS Advantage:</strong> The Infor Labor Management System tracks the exact labor costs associated with every order. This combines with other data to provide a true "cost-to-serve" calculation, directly linking operational efficiency to profitability.</p>`;
+        const perfectOrderModalContent = `<p><strong class="modal-content-strong">How it's derived:</strong> The percentage of orders with no errors (right item/qty), no damage, on-time shipment, and complete documentation.</p><p><strong class="modal-content-strong">The Infor WMS Advantage:</strong> This is the ultimate composite metric. Infor WMS is the system-of-record that provides the core data points: order accuracy from scanning, shipping timeliness from outbound planning, and fulfillment status, calculating a definitive "perfect order" score.</p>`;
+        const laborProductivityModalContent = `<p><strong class="modal-content-strong">How it's derived:</strong> The actual output of a worker or team, divided by the expected output based on engineered labor standards, shown as a percentage.</p><p><strong class="modal-content-strong">The Infor WMS Advantage:</strong> The integrated Labor Management System (LMS) module compares real-time performance against objective, engineered standards for every warehouse task. This enables performance-based incentives and data-driven management.</p>`;
+
+        const modal = document.getElementById('infoModal');
+        const modalTitle = document.getElementById('modalTitle');
+        const modalContent = document.getElementById('modalContent');
+        
+        function showModal(title, content) {
+            modalTitle.innerHTML = `<i data-lucide="bar-chart-2" class="mr-2 text-blue-600"></i> ${title}`;
+            modalContent.innerHTML = content;
+            modal.classList.remove('hidden');
+            lucide.createIcons();
+        }
+
+        function hideModal() {
+            modal.classList.add('hidden');
+        }
+
+        const chatWindow = document.getElementById('chat-window');
+        const chatSuggestions = document.getElementById('chat-suggestions');
+        function askAI(element, userQuery, aiResponse) {
+            chatSuggestions.style.pointerEvents = 'none';
+            chatSuggestions.style.opacity = '0.5';
+            const userBubble = document.createElement('div');
+            userBubble.className = 'chat-bubble chat-user';
+            userBubble.textContent = userQuery;
+            chatWindow.appendChild(userBubble);
+            chatWindow.scrollTop = chatWindow.scrollHeight;
+            const typingIndicator = document.createElement('div');
+            typingIndicator.className = 'chat-bubble chat-ai typing-indicator';
+            typingIndicator.innerHTML = '<span></span><span></span><span></span>';
+            chatWindow.appendChild(typingIndicator);
+            chatWindow.scrollTop = chatWindow.scrollHeight;
+            setTimeout(() => {
+                chatWindow.removeChild(typingIndicator);
+                const aiBubble = document.createElement('div');
+                aiBubble.className = 'chat-bubble chat-ai';
+                aiBubble.innerHTML = aiResponse;
+                chatWindow.appendChild(aiBubble);
+                chatWindow.scrollTop = chatWindow.scrollHeight;
+                chatSuggestions.style.pointerEvents = 'auto';
+                chatSuggestions.style.opacity = '1';
+            }, 1500 + Math.random() * 800);
+        }
+        
+        function changeTab(tabName) {
+            const tabs = document.querySelectorAll('.tab-button');
+            const panels = document.querySelectorAll('.tab-panel');
+            
+            tabs.forEach(tab => {
+                tab.classList.remove('active');
+            });
+            panels.forEach(panel => {
+                panel.classList.add('hidden');
+            });
+            
+            document.getElementById(tabName + '-tab').classList.add('active');
+            document.getElementById(tabName + '-content').classList.remove('hidden');
+        }
+        
+        function createThroughputGauge(canvasId, value, color) {
+            const ctx = document.getElementById(canvasId).getContext('2d');
+            new Chart(ctx, {
+                type: 'doughnut',
+                data: { datasets: [{ data: [value, 100 - value], backgroundColor: [color, '#e5e7eb'], borderColor: ['#ffffff', '#ffffff'], borderWidth: 2, circumference: 180, rotation: 270 }] },
+                options: { responsive: true, maintainAspectRatio: true, aspectRatio: 2, cutout: '75%', plugins: { tooltip: { enabled: false } } }
+            });
+        }
+        
+        createThroughputGauge('throughputChartSA', 85, '#10b981');
+        createThroughputGauge('throughputChartBT', 92, '#f59e0b');
+        createThroughputGauge('throughputChartPL', 78, '#3b82f6');
+
+        const ctxLabelColor = '#6b7280';
+        const gridColor = '#e5e7eb';
+        const chartColors = {
+            blue: '#2563eb',
+            lightBlue: '#60a5fa',
+            gray: '#9ca3af',
+            lightGray: '#d1d5db'
+        };
+        
+        new Chart(document.getElementById('laborChart').getContext('2d'), {
+            type: 'line',
+            data: { labels: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'], datasets: [{ label: 'AI Forecast', data: [12000, 11500, 13000, 15000, 14500, 18000, 17500], borderColor: chartColors.gray, backgroundColor: 'rgba(156, 163, 175, 0.1)', fill: true, tension: 0.4 }, { label: 'Actual Cost', data: [12200, 11300, 13100, 15300, 14800, 18200, 17400], borderColor: chartColors.blue, backgroundColor: 'rgba(37, 99, 235, 0.1)', fill: true, tension: 0.4 }] },
+            options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { labels: { color: ctxLabelColor } } }, scales: { y: { ticks: { color: ctxLabelColor }, grid: { color: gridColor } }, x: { ticks: { color: ctxLabelColor }, grid: { color: gridColor } } } }
+        });
+
+        new Chart(document.getElementById('savingsChart').getContext('2d'), {
+            type: 'doughnut',
+            data: { labels: ['IT Infrastructure', 'Labor Optimization', 'Inventory Holding', 'Reduced Freight'], datasets: [{ data: [35, 30, 20, 15], backgroundColor: [chartColors.blue, chartColors.lightBlue, chartColors.gray, chartColors.lightGray], borderColor: '#ffffff', borderWidth: 4 }] },
+            options: { responsive: true, maintainAspectRatio: false, cutout: '70%', plugins: { legend: { position: 'right', labels: { color: ctxLabelColor, boxWidth: 12, padding: 20 } } } }
+        });
+    </script>
+</body>
+</html>
+
