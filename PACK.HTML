@@ -1,0 +1,753 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Warehouse Packing System</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+        .hidden {
+            display: none;
+        }
+        .scan-success {
+            background-color: #dcfce7; /* Green 100 */
+            border-left: 4px solid #22c55e; /* Green 500 */
+        }
+        .scan-error {
+            background-color: #fee2e2; /* Red 100 */
+            border-left: 4px solid #ef4444; /* Red 500 */
+        }
+        .scan-info {
+            background-color: #e0f2fe; /* Sky 100 */
+            border-left: 4px solid #0ea5e9; /* Sky 500 */
+        }
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: rgba(0, 0, 0, 0.6);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 50;
+        }
+        .label-container {
+            transform: rotate(0deg);
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+        }
+        /* Sidebar styles */
+        .sidebar-link {
+            display: flex;
+            align-items: center;
+            padding: 0.75rem 1rem;
+            border-radius: 0.375rem;
+            color: #475569; /* slate-600 */
+            font-weight: 500;
+            transition: background-color 0.2s, color 0.2s;
+        }
+        .sidebar-link:hover {
+            background-color: #e2e8f0; /* slate-200 */
+        }
+        .sidebar-link.active {
+            background-color: #3b82f6; /* blue-600 */
+            color: white;
+        }
+        .sidebar-link svg {
+            margin-right: 0.75rem;
+        }
+    </style>
+</head>
+<body class="bg-slate-100 text-slate-800">
+
+    <!-- Header -->
+    <header id="main-header" class="bg-white shadow-md rounded-lg p-4 m-4 flex justify-between items-center hidden">
+        <div class="flex items-center space-x-3">
+            <svg class="w-8 h-8 text-blue-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M21 7.5l-9-5.25L3 7.5m18 0l-9 5.25m9-5.25v9l-9 5.25M3 7.5l9 5.25M3 7.5v9l9 5.25m0-9v9" />
+            </svg>
+            <h1 class="text-2xl font-bold text-slate-700">Warehouse Packing System</h1>
+        </div>
+        <div id="user-info" class="text-right">
+            <!-- User info will be populated by JS -->
+        </div>
+    </header>
+    
+    <!-- Main Container -->
+    <div id="app-container" class="container mx-auto p-4 max-w-7xl hidden">
+        <div class="flex space-x-6">
+            <!-- Sidebar Navigation -->
+            <aside class="w-64 flex-shrink-0">
+                <nav id="sidebar-nav" class="bg-white p-4 rounded-lg shadow-md space-y-2">
+                    <!-- Nav links will be populated by JS -->
+                </nav>
+            </aside>
+
+            <!-- Main Content Area -->
+            <div class="flex-grow">
+                 <!-- Order Selection Screen -->
+                <main id="order-screen" class="hidden bg-white p-8 rounded-lg shadow-md max-w-md mx-auto">
+                    <h2 class="text-xl font-semibold mb-6 text-center">Scan Order to Begin</h2>
+                    <form id="order-form">
+                        <div class="mb-4">
+                            <label for="order-id" class="block text-sm font-medium text-slate-600 mb-1">Order Number</label>
+                            <input type="text" id="order-id" placeholder="e.g., ORD-1001" class="w-full px-3 py-2 border border-slate-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" required>
+                        </div>
+                        <button type="submit" class="w-full bg-blue-600 text-white font-bold py-2 px-4 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors">Start Packing</button>
+                         <div id="order-error" class="text-red-500 text-sm mt-2 text-center"></div>
+                    </form>
+                </main>
+
+                <!-- Packing Screen -->
+                <main id="packing-screen" class="hidden">
+                    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                        <!-- Left Column: Order & Item Info -->
+                        <div class="lg:col-span-2 space-y-6">
+                            <div class="bg-white p-6 rounded-lg shadow-md">
+                                <div class="pb-4 border-b border-slate-200 mb-4">
+                                    <div class="flex justify-between items-start">
+                                        <div>
+                                            <h2 class="text-2xl font-bold" id="pack-order-id"></h2>
+                                            <p class="text-slate-500" id="pack-customer"></p>
+                                        </div>
+                                        <div class="text-right">
+                                            <p class="text-lg font-semibold bg-slate-100 px-3 py-1 rounded-md" id="pack-carton-count"></p>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="overflow-x-auto">
+                                    <table class="min-w-full divide-y divide-slate-200">
+                                        <thead class="bg-slate-50">
+                                            <tr>
+                                                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Status</th>
+                                                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">SKU</th>
+                                                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Description</th>
+                                                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Packed / Req.</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="item-list" class="bg-white divide-y divide-slate-200"></tbody>
+                                    </table>
+                                </div>
+                            </div>
+                            <div class="bg-white p-6 rounded-lg shadow-md">
+                                <h3 class="font-semibold mb-4 text-slate-700 flex items-center space-x-2">
+                                    <svg class="w-6 h-6 text-blue-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09zM18.259 8.715L18 9.75l-.259-1.035a3.375 3.375 0 00-2.455-2.456L14.25 6l1.036-.259a3.375 3.375 0 002.455-2.456L18 2.25l.259 1.035a3.375 3.375 0 002.456 2.456L21.75 6l-1.035.259a3.375 3.375 0 00-2.456 2.456zM16.898 20.562L16.25 21.75l-.648-1.188a2.25 2.25 0 01-1.423-1.423L13.5 18.75l1.188-.648a2.25 2.25 0 011.423-1.423L17.25 15l.648 1.188a2.25 2.25 0 011.423 1.423L20.5 18.75l-1.188.648a2.25 2.25 0 01-1.423 1.423z" /></svg>
+                                    <span>System Recommendations</span>
+                                </h3>
+                                <div id="recommendations" class="space-y-3 text-sm"></div>
+                            </div>
+                        </div>
+                        <div class="space-y-6">
+                            <div class="bg-white p-6 rounded-lg shadow-md">
+                                <form id="scan-form">
+                                    <label for="scan-input" class="block text-sm font-medium text-slate-600 mb-1">Scan SKU or Action Code</label>
+                                    <input type="text" id="scan-input" class="w-full px-3 py-2 border border-slate-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" autocomplete="off">
+                                    <div id="scan-feedback" class="text-sm mt-2 h-5"></div>
+                                </form>
+                            </div>
+                            <div class="bg-white p-6 rounded-lg shadow-md">
+                                <h3 class="font-semibold mb-4 text-slate-700">Packing Actions</h3>
+                                <div class="grid grid-cols-2 gap-3">
+                                    <button data-action="TISSUE-PAPER" class="action-btn bg-pink-100 text-pink-800 hover:bg-pink-200 p-2 rounded-md text-sm font-semibold transition-colors">Add Tissue Paper</button>
+                                    <button data-action="ADD-HANGER" class="action-btn bg-slate-100 text-slate-800 hover:bg-slate-200 p-2 rounded-md text-sm font-semibold transition-colors">Add Hanger</button>
+                                    <button data-action="DUNNAGE" class="action-btn bg-amber-100 text-amber-800 hover:bg-amber-200 p-2 rounded-md text-sm font-semibold transition-colors">Add Dunnage</button>
+                                    <button data-action="INNER-BAG" class="action-btn bg-indigo-100 text-indigo-800 hover:bg-indigo-200 p-2 rounded-md text-sm font-semibold transition-colors">Add Inner Bag</button>
+                                </div>
+                            </div>
+                            <div class="bg-white p-6 rounded-lg shadow-md">
+                                <h3 class="font-semibold mb-4 text-slate-700">Carton Actions</h3>
+                                <div class="space-y-3">
+                                    <button id="close-carton-btn" disabled class="w-full bg-green-600 text-white font-bold py-2 px-4 rounded-md hover:bg-green-700 transition-colors disabled:bg-slate-300 disabled:cursor-not-allowed">Close Carton & Print Label</button>
+                                    <button id="packing-list-btn" disabled class="w-full bg-sky-600 text-white font-bold py-2 px-4 rounded-md hover:bg-sky-700 transition-colors disabled:bg-slate-300 disabled:cursor-not-allowed">Print Packing List</button>
+                                    <button id="reopen-carton-btn" class="w-full bg-gray-500 text-white font-bold py-2 px-4 rounded-md hover:bg-gray-600 transition-colors hidden">Re-open Last Carton</button>
+                                    <button id="next-order-btn" class="w-full bg-blue-600 text-white font-bold py-2 px-4 rounded-md hover:bg-blue-700 transition-colors hidden">Finish & Next Order</button>
+                                </div>
+                            </div>
+                            <div class="bg-white p-6 rounded-lg shadow-md">
+                                <h3 class="font-semibold mb-4 text-slate-700">Activity Log</h3>
+                                <div id="activity-log" class="h-48 overflow-y-auto space-y-2 text-sm pr-2"></div>
+                            </div>
+                        </div>
+                    </div>
+                </main>
+
+                <!-- Customer Master Screen -->
+                <main id="customer-master-screen" class="hidden bg-white p-8 rounded-lg shadow-md">
+                    <h2 class="text-xl font-semibold mb-6">Customer Master</h2>
+                    <div class="overflow-x-auto">
+                        <table class="min-w-full divide-y divide-slate-200">
+                            <thead class="bg-slate-50">
+                                <tr>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">ID</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Name</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Address</th>
+                                </tr>
+                            </thead>
+                            <tbody id="customer-master-list" class="bg-white divide-y divide-slate-200"></tbody>
+                        </table>
+                    </div>
+                </main>
+
+                <!-- Packing Master Screen -->
+                <main id="packing-master-screen" class="hidden bg-white p-8 rounded-lg shadow-md">
+                    <h2 class="text-xl font-semibold mb-6">Packing Rules Master</h2>
+                     <div class="overflow-x-auto">
+                        <table class="min-w-full divide-y divide-slate-200">
+                            <thead class="bg-slate-50">
+                                <tr>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Rule ID</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Description</th>
+                                </tr>
+                            </thead>
+                            <tbody id="packing-master-list" class="bg-white divide-y divide-slate-200"></tbody>
+                        </table>
+                    </div>
+                </main>
+
+                 <!-- Carton Master Screen -->
+                <main id="carton-master-screen" class="hidden bg-white p-8 rounded-lg shadow-md">
+                    <h2 class="text-xl font-semibold mb-6">Carton Master</h2>
+                     <div class="overflow-x-auto">
+                        <table class="min-w-full divide-y divide-slate-200">
+                            <thead class="bg-slate-50">
+                                <tr>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Carton Name / Size</th>
+                                </tr>
+                            </thead>
+                            <tbody id="carton-master-list" class="bg-white divide-y divide-slate-200"></tbody>
+                        </table>
+                    </div>
+                </main>
+
+                 <!-- Label Master Screen -->
+                <main id="label-master-screen" class="hidden bg-white p-8 rounded-lg shadow-md">
+                    <h2 class="text-xl font-semibold mb-6">Label Master</h2>
+                    <p class="text-slate-600 mb-4">Manage customer-specific and carrier-specific label templates.</p>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div>
+                            <h3 class="font-semibold mb-2">Standard Shipping Label</h3>
+                            <div class="border rounded-lg p-4 bg-slate-50 h-[300px]">
+                                <!-- Dummy Label -->
+                                <div class="border-2 border-dashed border-slate-300 p-2 h-full text-xs">
+                                    <p>SHIP FROM: TAL APPAREL</p>
+                                    <p>SHIP TO: [Customer Address]</p>
+                                    <p class="mt-4">PO#: [Order PO]</p>
+                                    <div class="flex-grow flex items-center justify-center">
+                                        <p class="text-slate-400">Standard Barcode</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div>
+                             <h3 class="font-semibold mb-2">Global Fashion Group Label</h3>
+                            <div class="border rounded-lg p-4 bg-slate-50 h-[300px]">
+                                <!-- Dummy Label -->
+                                <div class="border-2 border-dashed border-slate-300 p-2 h-full text-xs">
+                                    <div class="flex justify-between items-center">
+                                        <p>SHIP FROM: TAL APPAREL</p>
+                                        <p class="font-bold text-lg">GFG</p>
+                                    </div>
+                                    <p>SHIP TO: [Customer Address]</p>
+                                    <p class="mt-4">PO#: [Order PO]</p>
+                                    <div class="flex-grow flex items-center justify-center text-center">
+                                        <p class="text-slate-400">GS1-128 SSCC Barcode</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </main>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Login Screen (Centered) -->
+    <div id="login-container" class="min-h-screen flex items-center justify-center">
+        <main id="login-screen" class="bg-white p-8 rounded-lg shadow-md max-w-md w-full">
+            <div class="flex justify-center items-center space-x-3 mb-6">
+                <svg class="w-10 h-10 text-blue-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M21 7.5l-9-5.25L3 7.5m18 0l-9 5.25m9-5.25v9l-9 5.25M3 7.5l9 5.25M3 7.5v9l9 5.25m0-9v9" />
+                </svg>
+                <h1 class="text-3xl font-bold text-slate-700">WPS Login</h1>
+            </div>
+            <form id="login-form">
+                <div class="mb-4">
+                    <label for="packer-id" class="block text-sm font-medium text-slate-600 mb-1">Packer ID</label>
+                    <input type="text" id="packer-id" value="PACKER01" class="w-full px-3 py-2 border border-slate-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" required>
+                </div>
+                <div class="mb-6">
+                    <label for="station-id" class="block text-sm font-medium text-slate-600 mb-1">Station ID</label>
+                    <input type="text" id="station-id" value="STATION-A" class="w-full px-3 py-2 border border-slate-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" required>
+                </div>
+                <button type="submit" class="w-full bg-blue-600 text-white font-bold py-2 px-4 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors">Login</button>
+            </form>
+        </main>
+    </div>
+
+    <!-- Modals -->
+    <div id="label-modal" class="modal-overlay hidden">
+        <div class="bg-white p-1 rounded-lg w-[400px] h-[600px] label-container">
+             <div id="label-content" class="w-full h-full border-4 border-dashed border-slate-300 p-4 flex flex-col"></div>
+        </div>
+    </div>
+    <div id="packing-list-modal" class="modal-overlay hidden">
+        <div class="bg-white p-8 rounded-lg w-[600px] max-w-2xl">
+             <div id="packing-list-content" class="w-full h-full"></div>
+             <button id="close-packing-list-btn" class="mt-4 w-full bg-slate-500 text-white font-bold py-2 px-4 rounded-md hover:bg-slate-600 transition-colors">Close</button>
+        </div>
+    </div>
+
+    <script>
+        // --- MOCK DATA ---
+        const mockData = {
+            customers: {
+                "CUST-A": { name: "Siam Paragon Apparel", address: "991 Rama I Rd, Pathum Wan, Bangkok 10330, Thailand" },
+                "CUST-B": { name: "Global Fashion Group", address: "1 Rockefeller Plaza, New York, NY 10020, USA" },
+                "CUST-C": { name: "Chatuchak Market Wholesalers", address: "Kamphaeng Phet 2 Rd, Chatuchak, Bangkok 10900, Thailand" }
+            },
+            packingRules: [
+                { id: "RULE-01", desc: "All items require polybagging." },
+                { id: "RULE-02", desc: "Include marketing insert #MKT-02." },
+                { id: "RULE-03", desc: "Must use a fixed-size box (GFS-BOX-S)." },
+                { id: "RULE-04", desc: "Attach hanger to each garment." }
+            ],
+            cartonSizes: [
+                "Small - 10x8x4", "Medium - 12x9x4", "Large - 18x12x6", "X-Large - 24x18x6"
+            ],
+            orders: {
+                "ORD-1001": {
+                    customer: { id: "CUST-A", name: "Siam Paragon Apparel" },
+                    items: [
+                        { sku: "TAL-FG-TH-1120M", desc: "Men's Polo - Navy - Size M", qty: 2, lot: "L202409A" },
+                        { sku: "TAL-FG-TH-1120L", desc: "Men's Polo - Navy - Size L", qty: 1, lot: "L202409A" }
+                    ],
+                    packingRecommendation: {
+                        boxSize: "Medium - 12x9x4",
+                        rules: ["All items require polybagging.", "Include marketing insert #MKT-02."]
+                    }
+                },
+                "ORD-1002": {
+                    customer: { id: "CUST-B", name: "Global Fashion Group" },
+                    items: [
+                        { sku: "TAL-FG-TH-2350S", desc: "Women's Blouse - White - Size S (Polybag)", qty: 5, lot: "L202408C" }
+                    ],
+                    packingRecommendation: {
+                        boxSize: "Small - 10x8x4",
+                        rules: ["Must use a fixed-size box (GFS-BOX-S).", "Attach hanger to each garment."]
+                    }
+                },
+                "ORD-1003": {
+                    customer: { id: "CUST-C", name: "Chatuchak Market Wholesalers" },
+                    items: [
+                        { sku: "TAL-FG-TH-4100-5Y", desc: "Kids Graphic Tee - Dino - 5 Yrs", qty: 1, lot: "L202409B" },
+                        { sku: "TAL-FG-TH-3210-28", desc: "Women's Denim Shorts - Blue - Size 28", qty: 1, lot: "L202407A" },
+                        { sku: "TAL-FG-TH-1800-XL", desc: "Men's Casual Shirt - Plaid - XL", qty: 1, lot: "L202409A" }
+                    ],
+                     packingRecommendation: {
+                        boxSize: "Large - 18x12x6",
+                        rules: ["No special requirements."]
+                    }
+                }
+            }
+        };
+
+        const appState = {
+            packerId: null,
+            stationId: null,
+            currentOrder: null,
+            packingProgress: null,
+            cartons: [],
+        };
+
+        // --- DOM ELEMENTS ---
+        const mainHeader = document.getElementById('main-header');
+        const loginContainer = document.getElementById('login-container');
+        const appContainer = document.getElementById('app-container');
+        const sidebarNav = document.getElementById('sidebar-nav');
+        const orderForm = document.getElementById('order-form');
+        const scanForm = document.getElementById('scan-form');
+        const mainScreens = document.querySelectorAll('main');
+        const userInfoDiv = document.getElementById('user-info');
+        const orderErrorDiv = document.getElementById('order-error');
+        const itemListBody = document.getElementById('item-list');
+        const activityLog = document.getElementById('activity-log');
+        const scanInput = document.getElementById('scan-input');
+        const scanFeedback = document.getElementById('scan-feedback');
+        const labelModal = document.getElementById('label-modal');
+        const labelContent = document.getElementById('label-content');
+        const packingListModal = document.getElementById('packing-list-modal');
+        const packingListContent = document.getElementById('packing-list-content');
+        const recommendationsDiv = document.getElementById('recommendations');
+        
+        const navigation = {
+            'order': { 
+                name: 'Packing Station', 
+                icon: `<svg class="w-5 h-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M8.25 7.5l.415-.207a.75.75 0 011.085.67V10.5m0 0h6m-6 0a.75.75 0 00.75.75h4.5a.75.75 0 00.75-.75V8.25a.75.75 0 00-.75-.75h-4.5a.75.75 0 00-.75.75v2.25m0 0A3.75 3.75 0 006 14.25v2.25a3.75 3.75 0 003.75 3.75h3.75a3.75 3.75 0 003.75-3.75v-2.25a3.75 3.75 0 00-3.75-3.75h-3.75A3.75 3.75 0 009 10.5v2.25" /></svg>`,
+                screenId: 'order-screen'
+            },
+            'customer-master': { 
+                name: 'Customer Master', 
+                icon: `<svg class="w-5 h-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M18 18.72a9.094 9.094 0 003.741-.479 3 3 0 00-4.682-2.72m-7.5-2.962a4.5 4.5 0 11-9 0 4.5 4.5 0 019 0zM18 18.72a9.094 9.094 0 003.741-.479 3 3 0 00-4.682-2.72m-7.5-2.962a4.5 4.5 0 11-9 0 4.5 4.5 0 019 0z" /></svg>`,
+                screenId: 'customer-master-screen'
+            },
+            'packing-master': {
+                name: 'Packing Rules',
+                icon: `<svg class="w-5 h-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>`,
+                screenId: 'packing-master-screen'
+            },
+             'carton-master': {
+                name: 'Carton Master',
+                icon: `<svg class="w-5 h-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M20.25 7.5l-.625 10.632a2.25 2.25 0 01-2.247 2.118H6.622a2.25 2.25 0 01-2.247-2.118L3.75 7.5M10 11.25h4M3.375 7.5h17.25c.621 0 1.125-.504 1.125-1.125v-1.5c0-.621-.504-1.125-1.125-1.125H3.375c-.621 0-1.125.504-1.125 1.125v1.5c0 .621.504 1.125 1.125 1.125z" /></svg>`,
+                screenId: 'carton-master-screen'
+            },
+            'label-master': {
+                name: 'Label Master',
+                icon: `<svg class="w-5 h-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M3.75 4.875c0-.621.504-1.125 1.125-1.125h4.5c.621 0 1.125.504 1.125 1.125v4.5c0 .621-.504 1.125-1.125 1.125h-4.5A1.125 1.125 0 013.75 9.375v-4.5zM3.75 14.625c0-.621.504-1.125 1.125-1.125h4.5c.621 0 1.125.504 1.125 1.125v4.5c0 .621-.504 1.125-1.125 1.125h-4.5a1.125 1.125 0 01-1.125-1.125v-4.5zM13.5 4.875c0-.621.504-1.125 1.125-1.125h4.5c.621 0 1.125.504 1.125 1.125v4.5c0 .621-.504 1.125-1.125 1.125h-4.5A1.125 1.125 0 0113.5 9.375v-4.5zM13.5 14.625c0-.621.504-1.125 1.125-1.125h4.5c.621 0 1.125.504 1.125 1.125v4.5c0 .621-.504 1.125-1.125 1.125h-4.5a1.125 1.125 0 01-1.125-1.125v-4.5z" /></svg>`,
+                screenId: 'label-master-screen'
+            }
+        };
+
+        // --- UI RENDERING FUNCTIONS ---
+        
+        function switchScreen(screenId) {
+            mainScreens.forEach(screen => screen.classList.add('hidden'));
+            document.getElementById(screenId).classList.remove('hidden');
+
+            document.querySelectorAll('#sidebar-nav .sidebar-link').forEach(link => {
+                link.classList.remove('active');
+                if (link.dataset.screen === screenId) {
+                    link.classList.add('active');
+                }
+            });
+
+            // If switching to a master data screen, render its content
+            if(screenId === 'customer-master-screen') renderCustomerMaster();
+            if(screenId === 'packing-master-screen') renderPackingMaster();
+            if(screenId === 'carton-master-screen') renderCartonMaster();
+        }
+
+        function renderSidebar() {
+            sidebarNav.innerHTML = '';
+            for (const key in navigation) {
+                const navItem = navigation[key];
+                const link = document.createElement('a');
+                link.href = '#';
+                link.className = 'sidebar-link';
+                link.dataset.screen = navItem.screenId;
+                link.innerHTML = `${navItem.icon} ${navItem.name}`;
+                sidebarNav.appendChild(link);
+            }
+        }
+
+        function renderCustomerMaster() {
+            const list = document.getElementById('customer-master-list');
+            list.innerHTML = '';
+            for (const id in mockData.customers) {
+                const customer = mockData.customers[id];
+                const row = `
+                    <tr>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm font-mono">${id}</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">${customer.name}</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-slate-500">${customer.address}</td>
+                    </tr>
+                `;
+                list.innerHTML += row;
+            }
+        }
+
+        function renderPackingMaster() {
+            const list = document.getElementById('packing-master-list');
+            list.innerHTML = '';
+            mockData.packingRules.forEach(rule => {
+                const row = `
+                    <tr>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm font-mono">${rule.id}</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-slate-500">${rule.desc}</td>
+                    </tr>
+                `;
+                list.innerHTML += row;
+            });
+        }
+        
+        function renderCartonMaster() {
+            const list = document.getElementById('carton-master-list');
+            list.innerHTML = '';
+            mockData.cartonSizes.forEach(size => {
+                const row = `
+                    <tr>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">${size}</td>
+                    </tr>
+                `;
+                list.innerHTML += row;
+            });
+        }
+
+        function renderItemList() {
+            itemListBody.innerHTML = '';
+            appState.packingProgress.items.forEach(item => {
+                const isComplete = item.packedQty >= item.qty;
+                const rowClass = isComplete ? 'bg-green-50' : '';
+                const statusIcon = isComplete 
+                    ? `<svg class="w-6 h-6 text-green-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>`
+                    : `<svg class="w-6 h-6 text-slate-300" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>`;
+
+                const row = `
+                    <tr class="transition-colors ${rowClass}">
+                        <td class="px-6 py-4">${statusIcon}</td>
+                        <td class="px-6 py-4 font-mono text-sm">${item.sku}</td>
+                        <td class="px-6 py-4">${item.desc}</td>
+                        <td class="px-6 py-4 font-semibold">${item.packedQty} / ${item.qty}</td>
+                    </tr>
+                `;
+                itemListBody.innerHTML += row;
+            });
+            checkOrderComplete();
+        }
+        
+        function logActivity(message, type = 'info') {
+            const time = new Date().toLocaleTimeString();
+            const logEntry = `<div class="p-2 rounded-md ${type === 'error' ? 'scan-error' : 'scan-info'}"><span class="font-semibold">${time}:</span> ${message}</div>`;
+            activityLog.innerHTML = logEntry + activityLog.innerHTML;
+        }
+
+        function renderRecommendations() {
+            const recommendation = appState.currentOrder.packingRecommendation;
+            recommendationsDiv.innerHTML = '';
+            if (recommendation) {
+                let rulesHtml = recommendation.rules.map(rule => `<li>${rule}</li>`).join('');
+                recommendationsDiv.innerHTML = `
+                    <p><span class="font-semibold">Suggested Box:</span> ${recommendation.boxSize}</p>
+                    <div>
+                        <p class="font-semibold">Packing Rules:</p>
+                        <ul class="list-disc list-inside text-slate-600">${rulesHtml}</ul>
+                    </div>
+                `;
+            }
+        }
+
+        function updatePackerInfo() {
+            if (appState.packerId) {
+                userInfoDiv.innerHTML = `
+                    <p class="font-semibold">${appState.packerId}</p>
+                    <p class="text-sm text-slate-500">${appState.stationId}</p>
+                `;
+            } else {
+                userInfoDiv.innerHTML = '';
+            }
+        }
+        
+        function updateCartonInfo() {
+            document.getElementById('pack-carton-count').textContent = `Carton ${appState.cartons.length + 1}`;
+        }
+
+        // --- CORE LOGIC FUNCTIONS ---
+
+        function handleLogin(e) {
+            e.preventDefault();
+            appState.packerId = document.getElementById('packer-id').value;
+            appState.stationId = document.getElementById('station-id').value;
+            
+            loginContainer.classList.add('hidden');
+            mainHeader.classList.remove('hidden');
+            appContainer.classList.remove('hidden');
+
+            updatePackerInfo();
+            renderSidebar();
+            switchScreen('order-screen');
+            document.getElementById('order-id').focus();
+        }
+
+        function handleOrderSelection(e) {
+            e.preventDefault();
+            const orderId = document.getElementById('order-id').value.toUpperCase();
+            if (mockData.orders[orderId]) {
+                appState.currentOrder = { id: orderId, ...mockData.orders[orderId] };
+                startPacking();
+                orderErrorDiv.textContent = '';
+            } else {
+                orderErrorDiv.textContent = 'Order not found.';
+            }
+        }
+        
+        function startPacking() {
+            appState.packingProgress = {
+                items: JSON.parse(JSON.stringify(appState.currentOrder.items)).map(item => ({ ...item, packedQty: 0 })),
+                actions: []
+            };
+            appState.cartons = [];
+            
+            switchScreen('packing-screen');
+            scanInput.focus();
+            
+            document.getElementById('pack-order-id').textContent = `Order: ${appState.currentOrder.id}`;
+            document.getElementById('pack-customer').textContent = `Customer: ${appState.currentOrder.customer.name}`;
+            activityLog.innerHTML = '';
+            document.getElementById('close-carton-btn').disabled = true;
+            document.getElementById('packing-list-btn').disabled = true;
+            document.getElementById('next-order-btn').classList.add('hidden');
+            
+            logActivity(`Started packing order ${appState.currentOrder.id}.`);
+            renderItemList();
+            renderRecommendations();
+            updateCartonInfo();
+        }
+        
+        function handleScan(e) {
+            e.preventDefault();
+            const value = scanInput.value.trim().toUpperCase();
+            if (!value) return;
+
+            const itemToPack = appState.packingProgress.items.find(item => item.sku === value);
+
+            scanFeedback.classList.remove('scan-success', 'scan-error');
+
+            if (itemToPack) {
+                if (itemToPack.packedQty < itemToPack.qty) {
+                    itemToPack.packedQty++;
+                    scanFeedback.textContent = `Packed: ${itemToPack.desc}`;
+                    scanFeedback.classList.add('scan-success');
+                    logActivity(`Scanned SKU: ${value}.`);
+                    renderItemList();
+                } else {
+                    scanFeedback.textContent = 'All units for this SKU are already packed.';
+                    scanFeedback.classList.add('scan-error');
+                    logActivity(`Extra scan for SKU: ${value}.`, 'error');
+                }
+            } else {
+                scanFeedback.textContent = 'Invalid SKU for this order.';
+                scanFeedback.classList.add('scan-error');
+                logActivity(`Invalid SKU scanned: ${value}.`, 'error');
+            }
+
+            scanInput.value = '';
+            setTimeout(() => { scanFeedback.textContent = ''; }, 2000);
+        }
+
+        function handleActionClick(e) {
+            const action = e.target.closest('.action-btn')?.dataset.action;
+            if (action) {
+                appState.packingProgress.actions.push(action);
+                logActivity(`Action: ${action.replace('-', ' ')} added.`);
+            }
+        }
+        
+        function checkOrderComplete() {
+            const allItemsPacked = appState.packingProgress.items.every(item => item.packedQty >= item.qty);
+            document.getElementById('close-carton-btn').disabled = !allItemsPacked;
+            document.getElementById('packing-list-btn').disabled = !allItemsPacked;
+            if (allItemsPacked) {
+                logActivity('All items packed. Ready to close carton.');
+            }
+        }
+
+        function closeCarton() {
+             appState.cartons.push({ ...appState.packingProgress });
+             logActivity(`Carton ${appState.cartons.length} closed and label generated.`);
+             generateLabel();
+             document.getElementById('close-carton-btn').classList.add('hidden');
+             document.getElementById('packing-list-btn').disabled = true;
+             document.getElementById('reopen-carton-btn').classList.remove('hidden');
+             document.getElementById('next-order-btn').classList.remove('hidden');
+        }
+
+        function reopenCarton() {
+            if (appState.cartons.length > 0) {
+                const lastCartonIndex = appState.cartons.length - 1;
+                appState.cartons.pop();
+                logActivity(`Carton ${lastCartonIndex + 1} re-opened.`);
+                document.getElementById('close-carton-btn').classList.remove('hidden');
+                document.getElementById('packing-list-btn').disabled = false;
+                document.getElementById('reopen-carton-btn').classList.add('hidden');
+                document.getElementById('next-order-btn').classList.add('hidden');
+            }
+        }
+
+        function finishOrder() {
+            logActivity(`Order ${appState.currentOrder.id} complete.`);
+            appState.currentOrder = null;
+            appState.packingProgress = null;
+            appState.cartons = [];
+            document.getElementById('order-id').value = '';
+            switchScreen('order-screen');
+        }
+
+        function generatePackingList() {
+            const order = appState.currentOrder;
+            let itemsHtml = '';
+            appState.packingProgress.items.forEach(item => {
+                itemsHtml += `<tr class="border-b"><td class="py-2 px-4">${item.sku}</td><td class="py-2 px-4">${item.desc}</td><td class="py-2 px-4 text-center">${item.qty}</td></tr>`;
+            });
+            packingListContent.innerHTML = `
+                <h2 class="text-2xl font-bold mb-4">Packing List</h2>
+                <div class="flex justify-between mb-4 text-sm">
+                    <div><p><span class="font-semibold">Order #:</span> ${order.id}</p><p><span class="font-semibold">Customer:</span> ${order.customer.name}</p></div>
+                    <div class="text-right"><p><span class="font-semibold">Pack Date:</span> ${new Date().toLocaleDateString()}</p><p><span class="font-semibold">Packed By:</span> ${appState.packerId}</p></div>
+                </div>
+                <table class="w-full text-left">
+                    <thead><tr class="bg-slate-100 border-b"><th class="py-2 px-4 font-semibold">SKU</th><th class="py-2 px-4 font-semibold">Description</th><th class="py-2 px-4 font-semibold text-center">Quantity</th></tr></thead>
+                    <tbody>${itemsHtml}</tbody>
+                </table>`;
+            packingListModal.classList.remove('hidden');
+        }
+
+        function generateLabel() {
+            setTimeout(() => {
+                const order = appState.currentOrder;
+                const customerInfo = mockData.customers[order.customer.id];
+                const cartonIndex = appState.cartons.length - 1;
+                const totalCartons = appState.cartons.length;
+                const sscc = `(00) 0 0012345 123456789 ${cartonIndex}`;
+                labelContent.innerHTML = `
+                    <div class="flex-grow space-y-4">
+                        <div class="grid grid-cols-2 gap-4">
+                            <div><p class="text-xs font-bold">SHIP FROM:</p><p class="text-xs">TAL APPAREL (THAILAND)</p><p class="text-xs">123 Industrial Park</p><p class="text-xs">Bangkok, 10110, TH</p></div>
+                            <div><p class="text-xs font-bold">SHIP TO:</p><p class="text-xs">${customerInfo.name}</p><p class="text-xs">${customerInfo.address}</p></div>
+                        </div>
+                        <div class="border-t-2 border-black pt-2"><p class="text-xs font-bold">PO #: ${order.id.replace('ORD-', 'PO-')}</p></div>
+                        <div class="text-center"><p class="font-bold text-3xl">Carton ${cartonIndex + 1} of ${totalCartons}</p></div>
+                    </div>
+                    <div class="border-t-2 border-black pt-2 text-center">
+                        <p class="font-mono tracking-widest text-xs">SSCC</p>
+                        <img src="https://barcode.tec-it.com/barcode.ashx?data=${encodeURIComponent(sscc)}&code=GS1-128&translate-esc=on" alt="barcode" class="h-20 w-full object-contain"/>
+                        <p class="font-mono tracking-widest text-sm">${sscc}</p>
+                        <p class="font-mono text-xs mt-1">Lot: ${appState.packingProgress.items.map(i => i.lot).join(', ')}</p>
+                    </div>`;
+                labelModal.classList.remove('hidden');
+            }, 150);
+        }
+
+        // --- EVENT LISTENERS ---
+        document.getElementById('login-form').addEventListener('submit', handleLogin);
+        orderForm.addEventListener('submit', handleOrderSelection);
+        scanForm.addEventListener('submit', handleScan);
+        document.querySelector('.grid.grid-cols-2.gap-3').addEventListener('click', handleActionClick);
+        document.getElementById('close-carton-btn').addEventListener('click', closeCarton);
+        document.getElementById('reopen-carton-btn').addEventListener('click', reopenCarton);
+        document.getElementById('next-order-btn').addEventListener('click', finishOrder);
+        document.getElementById('packing-list-btn').addEventListener('click', generatePackingList);
+        labelModal.addEventListener('click', () => labelModal.classList.add('hidden'));
+        packingListModal.addEventListener('click', (e) => {
+            if(e.target === packingListModal || e.target.id === 'close-packing-list-btn') {
+                packingListModal.classList.add('hidden');
+            }
+        });
+
+        sidebarNav.addEventListener('click', (e) => {
+            const link = e.target.closest('.sidebar-link');
+            if (link) {
+                e.preventDefault();
+                switchScreen(link.dataset.screen);
+            }
+        });
+
+        // --- INITIALIZATION ---
+        // Initially, only the login form is visible.
+    </script>
+</body>
+</html>
+
