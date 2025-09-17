@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Efficient RF task management</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+        }
+        .rf-card {
+            transition: all 0.2s ease-in-out;
+        }
+        .rf-card:hover {
+            border-color: #dc2626;
+            background-color: #fef2f2;
+        }
+        .rf-card:hover svg {
+            color: #dc2626;
+        }
+    </style>
+</head>
+<body class="bg-white">
+
+    <div class="h-screen w-screen flex flex-col">
+        <!-- Main Content Area -->
+        <div class="flex-grow p-8 md:p-10 lg:p-12 flex flex-col">
+            <header class="mb-8 text-center">
+                <p class="text-sm font-semibold text-gray-500">INFOR WMS</p>
+                <h1 class="text-3xl md:text-4xl font-extrabold text-slate-800">Efficient RF task management</h1>
+            </header>
+            <div class="flex-grow flex items-center">
+                <div class="grid grid-cols-2 md:grid-cols-4 gap-5 w-full">
+                    <div class="rf-card text-center border-t-4 border-gray-200 pt-4"><div class="flex justify-center mb-3"><svg class="w-8 h-8 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path></svg></div><h3 class="font-bold text-slate-700 mb-2">Who am I?</h3><p class="text-xs text-gray-500 leading-relaxed">Determines my permissions, what can I see, what can I do.</p></div>
+                    <div class="rf-card text-center border-t-4 border-gray-200 pt-4"><div class="flex justify-center mb-3"><svg class="w-8 h-8 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4"></path></svg></div><h3 class="font-bold text-slate-700 mb-2">Which equipment do I have?</h3><p class="text-xs text-gray-500 leading-relaxed">Defines access constraints, weight limits, assignment type specific.</p></div>
+                    <div class="rf-card text-center border-t-4 border-gray-200 pt-4"><div class="flex justify-center mb-3"><svg class="w-8 h-8 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M4 6h16M4 12h16M4 18h7"></path></svg></div><h3 class="font-bold text-slate-700 mb-2">Where can I work?</h3><p class="text-xs text-gray-500 leading-relaxed">Checks my allowed areas for work (area/zone). Or where am I working (scanned area).</p></div>
+                    <div class="rf-card text-center border-t-4 border-gray-200 pt-4"><div class="flex justify-center mb-3"><svg class="w-8 h-8 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01"></path></svg></div><h3 class="font-bold text-slate-700 mb-2">What is there to be done?</h3><p class="text-xs text-gray-500 leading-relaxed">The tasks available, that I can do given previous checks, such as putaways, picks, replenishments, cycle counts, moves, and more.</p></div>
+                    <div class="rf-card text-center border-t-4 border-gray-200 pt-4"><div class="flex justify-center mb-3"><svg class="w-8 h-8 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg></div><h3 class="font-bold text-slate-700 mb-2">Which task is NOW more important?</h3><p class="text-xs text-gray-500 leading-relaxed">Evaluates task priority which can depend on a combination of factors.</p></div>
+                    <div class="rf-card text-center border-t-4 border-gray-200 pt-4"><div class="flex justify-center mb-3"><svg class="w-8 h-8 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"></path></svg></div><h3 class="font-bold text-slate-700 mb-2">Where am I?</h3><p class="text-xs text-gray-500 leading-relaxed">Proximity to decide which task is closer.</p></div>
+                    <div class="rf-card text-center border-t-4 border-gray-200 pt-4"><div class="flex justify-center mb-3"><svg class="w-8 h-8 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg></div><h3 class="font-bold text-slate-700 mb-2">And after, now that I am here, next?...</h3><p class="text-xs text-gray-500 leading-relaxed">Uses interleaving rules to optimize work even more, by determining a follow up task.</p></div>
+                    <div class="rf-card text-center border-t-4 border-red-600 pt-4 flex flex-col justify-center">
+                        <p class="text-4xl font-bold text-red-600">10-40%</p>
+                        <p class="text-sm font-semibold text-gray-500 mt-2">Increase in Worker Productivity</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <footer class="bg-slate-800 text-white p-3 flex justify-between items-center text-xs mt-auto"><div class="flex items-center"><span class="font-bold mr-2">infor</span><span class="font-bold text-red-500">WERC</span></div><div class="text-slate-400">Copyright &copy; 2025, Infor. All Rights Reserved. infor.com</div><div class="font-semibold">5</div></footer>
+    </div>
+
+</body>
+</html>
