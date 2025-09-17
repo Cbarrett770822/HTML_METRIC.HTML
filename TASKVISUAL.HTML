@@ -1,0 +1,796 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Infor WMS: Efficient RF Task Management</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            overflow: hidden;
+        }
+        .step-info, .rules-box {
+             transition: all 0.3s ease-in-out;
+             border-left: 4px solid transparent;
+        }
+        .step-info.active {
+            background-color: #e0f2fe;
+            border-left-color: #0ea5e9;
+            transform: scale(1.02);
+        }
+        .profile-attribute-highlight {
+            background-color: #fef08a; /* yellow-200 */
+            transform: scale(1.03);
+            box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+        }
+        .warehouse-container {
+            position: relative;
+            width: 100%;
+            height: 100%;
+        }
+        .task-queue-container {
+            position: absolute;
+            top: 10px;
+            left: 0;
+            right: 0;
+            padding: 8px;
+            background-color: rgba(241, 245, 249, 0.8);
+            backdrop-filter: blur(4px);
+            border-radius: 8px;
+            z-index: 20;
+            text-align: center;
+        }
+        .task-queue {
+            display: flex;
+            justify-content: center;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+        .warehouse-grid {
+            display: grid;
+            grid-template-columns: repeat(10, 1fr);
+            grid-template-rows: repeat(6, 1fr);
+            gap: 4px;
+            position: relative;
+            margin-top: 60px; /* Space for queue */
+            height: calc(100% - 60px);
+        }
+        .grid-cell {
+            border-radius: 4px;
+            aspect-ratio: 1 / 1;
+        }
+        .grid-cell.path { background-color: #e2e8f0; } /* slate-200 */
+        .grid-cell.rack { background-color: #94a3b8; } /* slate-400 */
+
+        .worker {
+            position: absolute;
+            width: 30px;
+            height: 30px;
+            background-color: #0ea5e9;
+            border: 2px solid white;
+            border-radius: 50%;
+            transition: left 0.5s linear, top 0.5s linear;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 10;
+            transform: translate(-50%, -50%); /* Center the element */
+        }
+        .task {
+            position: relative;
+            width: 30px;
+            height: 30px;
+            border-radius: 6px;
+            transition: all 0.8s ease-in-out;
+            opacity: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            color: white;
+            font-size: 10px;
+            font-weight: bold;
+        }
+        .task.in-grid {
+             position: absolute;
+             transform: translate(-50%, -50%); /* Center the element */
+        }
+        .task.pick { background-color: #f97316; } /* orange */
+        .task.putaway { background-color: #10b981; } /* green */
+        .task.replenish { background-color: #8b5cf6; } /* violet */
+        .task.disabled {
+            opacity: 0.5;
+            transform: translate(-50%, -50%) scale(0.8);
+        }
+        .task.highest-priority {
+            animation: pulse 1.5s infinite;
+        }
+        @keyframes pulse {
+            0%, 100% { box-shadow: 0 0 0 0 rgba(234, 179, 8, 0.7); }
+            50% { box-shadow: 0 0 0 10px rgba(234, 179, 8, 0); }
+        }
+        .productivity-result {
+            opacity: 0;
+            transform: translateY(20px);
+            transition: all 0.8s ease-in-out;
+        }
+        .productivity-result.visible {
+            opacity: 1;
+            transform: translateY(0);
+        }
+        #status-message {
+            transition: opacity 0.5s ease-in-out;
+            top: 0; /* Positioned above the task queue */
+            transform: translateX(-50%);
+        }
+        #rf-screen {
+            position: absolute;
+            width: 200px; /* Bigger screen */
+            background: white;
+            border: 4px solid #334155;
+            border-radius: 8px;
+            z-index: 15;
+            transition: left 0.5s linear, top 0.5s linear, opacity 0.3s ease-in-out;
+            opacity: 0;
+            transform: translate(-50%, -130%);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+        }
+    </style>
+</head>
+<body class="bg-slate-50 text-slate-800">
+
+    <div class="h-screen w-full flex flex-col p-4">
+        <div class="w-full max-w-7xl mx-auto bg-white rounded-2xl shadow-2xl flex flex-col flex-grow min-h-0 relative">
+            <button id="replayButton" class="absolute top-4 right-4 md:top-6 md:right-6 bg-sky-500 text-white font-bold py-2 px-4 rounded-lg hover:bg-sky-600 transition-colors z-30 text-sm">
+                Replay
+            </button>
+            <header class="text-center p-4 md:p-6 flex-shrink-0">
+                <h1 class="text-2xl md:text-3xl font-bold text-slate-900">Infor WMS: Efficient RF Task Management</h1>
+                <p class="text-slate-500 mt-1 text-sm md:text-base">Visualizing the task evaluation queue.</p>
+            </header>
+
+            <div class="flex flex-col md:flex-row gap-6 p-4 md:p-6 flex-grow min-h-0">
+                <!-- Left Panel: Logic Steps Info -->
+                <div class="w-full md:w-1/3 flex flex-col flex-shrink-0">
+                    <div id="intro-rules-container" class="hidden space-y-4 mb-6">
+                        <div id="putaway-rules" class="rules-box p-4 rounded-lg bg-emerald-100 border-emerald-200 border">
+                             <h3 class="font-bold text-lg text-emerald-800 flex items-center">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="currentColor" class="bi bi-box-arrow-in-down-left mr-2" viewBox="0 0 16 16"><path fill-rule="evenodd" d="M9.636 2.5a.5.5 0 0 0-.5-.5H2.5A1.5 1.5 0 0 0 1 3.5v10A1.5 1.5 0 0 0 2.5 15h10a1.5 1.5 0 0 0 1.5-1.5V6.864a.5.5 0 0 0-1 0V13.5a.5.5 0 0 1-.5.5h-10a.5.5 0 0 1-.5-.5v-10a.5.5 0 0 1 .5-.5h6.636a.5.5 0 0 0 .5-.5z"/><path fill-rule="evenodd" d="M5 10.5a.5.5 0 0 0 .5.5h5a.5.5 0 0 0 0-1h-5a.5.5 0 0 0-.5.5zm0-2a.5.5 0 0 0 .5.5h5a.5.5 0 0 0 0-1h-5a.5.5 0 0 0-.5.5zm0-2a.5.5 0 0 0 .5.5h5a.5.5 0 0 0 0-1h-5a.5.5 0 0 0-.5.5z"/></svg>
+                                Putaway Rules
+                            </h3>
+                        </div>
+                         <div id="allocation-rules" class="rules-box p-4 rounded-lg bg-orange-100 border-orange-200 border">
+                             <h3 class="font-bold text-lg text-orange-800 flex items-center">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="currentColor" class="bi bi-box-arrow-up-right mr-2" viewBox="0 0 16 16"><path fill-rule="evenodd" d="M8.636 3.5a.5.5 0 0 0-.5-.5H1.5A1.5 1.5 0 0 0 0 4.5v10A1.5 1.5 0 0 0 1.5 16h10a1.5 1.5 0 0 0 1.5-1.5V7.864a.5.5 0 0 0-1 0V14.5a.5.5 0 0 1-.5.5h-10a.5.5 0 0 1-.5-.5v-10a.5.5 0 0 1 .5-.5h6.636a.5.5 0 0 0 .5-.5z"/><path fill-rule="evenodd" d="M16 .5a.5.5 0 0 0-.5-.5h-5a.5.5 0 0 0 0 1h3.793L6.146 9.146a.5.5 0 1 0 .708.708L15 1.707V5.5a.5.5 0 0 0 1 0v-5z"/></svg>
+                                Allocation Rules
+                            </h3>
+                        </div>
+                    </div>
+                    <div id="main-steps-container">
+                        <div id="worker-profile-card" class="p-4 rounded-lg bg-slate-100 border border-slate-200 mb-6 transition-all duration-300">
+                            <h3 class="font-bold text-lg text-slate-800 mb-3 flex items-center">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="currentColor" class="bi bi-person-badge-fill mr-2" viewBox="0 0 16 16"><path d="M2 2a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V2zm4.5 0a.5.5 0 0 0 0 1h3a.5.5 0 0 0 0-1h-3zM8 11a3 3 0 1 0 0-6 3 3 0 0 0 0 6zm5 2.755C12.146 12.825 10.623 12 8 12s-4.146.826-5 1.755V14a1 1 0 0 0 1 1h8a1 1 0 0 0 1-1v-.245z"/></svg>
+                                Worker Profile
+                            </h3>
+                            <div class="space-y-2 text-sm">
+                                <div id="profile-permissions" class="flex items-center transition-all duration-300 p-2 rounded-md">
+                                    <span class="font-semibold w-28">Permissions:</span>
+                                    <span class="font-mono text-xs bg-slate-200 px-2 py-1 rounded">pick, putaway</span>
+                                </div>
+                                <div id="profile-equipment" class="flex items-center transition-all duration-300 p-2 rounded-md">
+                                    <span class="font-semibold w-28">Equipment:</span>
+                                    <span class="font-mono text-xs bg-slate-200 px-2 py-1 rounded">pallet jack</span>
+                                </div>
+                                <div id="profile-zones" class="flex items-center transition-all duration-300 p-2 rounded-md">
+                                    <span class="font-semibold w-28">Allowed Zones:</span>
+                                    <span class="font-mono text-xs bg-slate-200 px-2 py-1 rounded">A, C</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div id="steps-container" class="space-y-3">
+                            <div class="step-info p-4 rounded-lg" data-step="1">
+                                <h3 class="font-semibold text-lg">1. Filter by Permissions</h3>
+                                <p class="text-sm text-slate-600">What jobs can I do? Where can I work?</p>
+                            </div>
+                            <div class="step-info p-4 rounded-lg" data-step="2">
+                                <h3 class="font-semibold text-lg">2. Filter by Equipment</h3>
+                                <p class="text-sm text-slate-600">Do I have the right equipment for the remaining jobs?</p>
+                            </div>
+                             <div class="step-info p-4 rounded-lg" data-step="3">
+                                <h3 class="font-semibold text-lg">3. Analyze Priority</h3>
+                                <p class="text-sm text-slate-600">Of the valid jobs, which are the highest priority?</p>
+                            </div>
+                            <div class="step-info p-4 rounded-lg" data-step="4">
+                                <h3 class="font-semibold text-lg">4. Analyze Proximity</h3>
+                                <p class="text-sm text-slate-600">Of the high-priority jobs, which has the shortest travel path?</p>
+                            </div>
+                            <div class="step-info p-4 rounded-lg" data-step="5">
+                                <h3 class="font-semibold text-lg">5. Assign & Interleave</h3>
+                                <p class="text-sm text-slate-600">Assign the optimal task and find a follow-up job.</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Right Panel: Warehouse Animation -->
+                <div id="animation-container" class="w-full md:w-2/3 flex-grow min-h-0 bg-slate-100 rounded-lg p-4 relative">
+                    <div id="status-message" class="absolute left-1/2 bg-slate-800/80 text-white text-sm font-medium py-1.5 px-4 rounded-full shadow-lg z-30 opacity-0">
+                        Initializing...
+                    </div>
+                    <div class="warehouse-container">
+                        <div id="rf-screen" class="hidden"></div>
+                        <div class="task-queue-container">
+                            <h4 class="text-xs font-bold uppercase text-slate-500 mb-2">Task Queue</h4>
+                            <div id="task-queue" class="task-queue"></div>
+                        </div>
+                        <div id="warehouse" class="warehouse-grid"></div>
+                    </div>
+                    <div id="result-container" class="hidden w-full h-full flex-col items-center justify-center text-center">
+                        <div class="productivity-result">
+                            <div class="text-5xl md:text-7xl font-bold text-emerald-500">10-40%</div>
+                            <div class="text-2xl md:text-3xl font-semibold mt-2 text-slate-800">Increase in Worker Productivity</div>
+                            <p class="mt-4 text-slate-500">By optimizing every decision, the WMS eliminates wasted time and motion.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div id="comparison-modal" class="hidden fixed inset-0 bg-black/60 flex items-center justify-center p-4 z-50 transition-opacity duration-300">
+        <div class="bg-white rounded-2xl shadow-xl w-full max-w-4xl p-6 md:p-8 relative transition-transform duration-300 transform scale-95">
+            <button id="close-modal-button" class="absolute top-4 right-4 text-slate-400 hover:text-slate-800 text-3xl leading-none">&times;</button>
+            <h2 class="text-2xl font-bold text-center mb-6 text-slate-800">Manual vs. WMS-Directed Tasking</h2>
+            <div class="grid md:grid-cols-2 gap-8">
+                <!-- Manual Column -->
+                <div>
+                    <h3 class="font-semibold text-lg text-red-600 mb-2 text-center">Manual Process</h3>
+                    <p class="text-sm text-slate-600 mb-4 h-20">Worker manually chooses the next task from a list, often leading to inefficient travel ("deadheading") and prioritizing less urgent jobs.</p>
+                    <div class="w-full h-48 bg-slate-100 rounded p-4 flex justify-around items-end gap-4">
+                        <div class="w-1/2 h-full flex flex-col-reverse">
+                            <div class="text-center text-xs mt-1 font-medium text-slate-600">Productive Time</div>
+                            <div class="w-full bg-slate-400 rounded-t-md flex items-center justify-center text-sm text-white p-1 font-bold" style="height: 45%;">45%</div>
+                        </div>
+                        <div class="w-1/2 h-full flex flex-col-reverse">
+                             <div class="text-center text-xs mt-1 font-medium text-slate-600">Wasted Time</div>
+                            <div class="w-full bg-red-400 rounded-t-md flex items-center justify-center text-sm text-white p-1 font-bold" style="height: 55%;">55%</div>
+                        </div>
+                    </div>
+                </div>
+                <!-- WMS Column -->
+                <div>
+                    <h3 class="font-semibold text-lg text-emerald-600 mb-2 text-center">WMS-Directed Process</h3>
+                    <p class="text-sm text-slate-600 mb-4 h-20">System analyzes all factors (permissions, equipment, priority, location) to assign the single most optimal task, minimizing travel.</p>
+                     <div class="w-full h-48 bg-slate-100 rounded p-4 flex justify-around items-end gap-4">
+                        <div class="w-1/2 h-full flex flex-col-reverse">
+                            <div class="text-center text-xs mt-1 font-medium text-slate-600">Productive Time</div>
+                            <div class="w-full bg-slate-400 rounded-t-md flex items-center justify-center text-sm text-white p-1 font-bold" style="height: 80%;">80%</div>
+                        </div>
+                        <div class="w-1/2 h-full flex flex-col-reverse">
+                             <div class="text-center text-xs mt-1 font-medium text-slate-600">Minimized Travel</div>
+                            <div class="w-full bg-emerald-400 rounded-t-md flex items-center justify-center text-sm text-white p-1 font-bold" style="height: 20%;">20%</div>
+                        </div>
+                    </div>
+                    <p class="text-center text-sm text-slate-700 mt-2">A <span class="font-bold text-emerald-600">~64% reduction</span> in non-productive travel time.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+
+    <script>
+        // --- DOM Elements ---
+        const warehouse = document.getElementById('warehouse');
+        const taskQueue = document.getElementById('task-queue');
+        const steps = document.querySelectorAll('.step-info');
+        const replayButton = document.getElementById('replayButton');
+        const animationContainer = document.getElementById('animation-container');
+        const resultContainer = document.getElementById('result-container');
+        const statusMessage = document.getElementById('status-message');
+        const introRulesContainer = document.getElementById('intro-rules-container');
+        const mainStepsContainer = document.getElementById('main-steps-container');
+        const putawayRulesBox = document.getElementById('putaway-rules');
+        const allocationRulesBox = document.getElementById('allocation-rules');
+        const profileCard = document.getElementById('worker-profile-card');
+        const profilePermissions = document.getElementById('profile-permissions');
+        const profileEquipment = document.getElementById('profile-equipment');
+        const profileZones = document.getElementById('profile-zones');
+        const rfScreen = document.getElementById('rf-screen');
+        const comparisonModal = document.getElementById('comparison-modal');
+        const closeModalButton = document.getElementById('close-modal-button');
+
+
+        // --- Configuration ---
+        const GRID_COLS = 10;
+        const GRID_ROWS = 6;
+        
+        const WAREHOUSE_LAYOUT = [
+            [0,0,0,0,0,0,0,0,0,0],
+            [0,1,1,0,1,1,0,1,1,0],
+            [0,1,1,0,1,1,0,1,1,0],
+            [0,1,1,0,1,1,0,1,1,0],
+            [0,1,1,0,1,1,0,1,1,0],
+            [0,0,0,0,0,0,0,0,0,0]
+        ];
+        
+        let initialWorkerPos; 
+
+        let tasks = [];
+        const getInitialTasks = () => [
+            { id: 1, type: 'pick', x: 2, y: 2, priority: 10, required_equipment: 'pallet jack', required_zone: 'A', itemName: 'SKU-A4-L2', qty: 5 },
+            { id: 6, type: 'pick', x: 8, y: 3, priority: 3, required_equipment: 'pallet jack', required_zone: 'C', itemName: 'SKU-C1-L5', qty: 12 },
+            { id: 2, type: 'putaway', x: 5, y: 4, priority: 5, required_equipment: 'pallet jack', required_zone: 'B', itemName: 'PALLET-081', qty: 1 }, // Wrong zone
+            { id: 3, type: 'replenish', x: 8, y: 1, priority: 8, required_equipment: 'forklift', required_zone: 'C', itemName: 'BIN-S2-R1', qty: 1 }, // Wrong equipment
+            { id: 4, type: 'pick', x: 8, y: 4, priority: 10, required_equipment: 'pallet jack', required_zone: 'C', itemName: 'SKU-X9-P3', qty: 2 },
+            { id: 5, type: 'putaway', x: 5, y: 2, priority: 6, required_equipment: 'pallet jack', required_zone: 'C', itemName: 'PALLET-112', qty: 1 },
+            { id: 7, type: 'putaway', x: 2, y: 1, priority: 5, required_equipment: 'pallet jack', required_zone: 'B', itemName: 'PALLET-075', qty: 1 }, // Wrong zone
+        ];
+
+        const workerProfile = {
+            id: 'user_123',
+            permissions: ['pick', 'putaway'],
+            equipment: 'pallet jack',
+            allowed_zones: ['A', 'C']
+        };
+
+        const sleep = ms => new Promise(resolve => setTimeout(resolve, ms));
+
+        function getRandomWorkerStartPosition() {
+            const pathCells = [];
+            for (let y = 0; y < GRID_ROWS; y++) {
+                for (let x = 0; x < GRID_COLS; x++) {
+                    if (WAREHOUSE_LAYOUT[y][x] === 0) {
+                        pathCells.push({ x, y });
+                    }
+                }
+            }
+            return pathCells[Math.floor(Math.random() * pathCells.length)];
+        }
+
+        // --- Pathfinding Logic (BFS) ---
+        function findShortestPath(start, end) {
+            const queue = [[start, [start]]];
+            const visited = new Set([`${start.x},${start.y}`]);
+            
+            while(queue.length > 0) {
+                const [currentPos, path] = queue.shift();
+
+                if (currentPos.x === end.x && currentPos.y === end.y) {
+                    return path;
+                }
+
+                const neighbors = [
+                    {x: currentPos.x + 1, y: currentPos.y},
+                    {x: currentPos.x - 1, y: currentPos.y},
+                    {x: currentPos.x, y: currentPos.y + 1},
+                    {x: currentPos.x, y: currentPos.y - 1}
+                ];
+
+                for (const neighbor of neighbors) {
+                    const key = `${neighbor.x},${neighbor.y}`;
+                    if (
+                        neighbor.x >= 0 && neighbor.x < GRID_COLS &&
+                        neighbor.y >= 0 && neighbor.y < GRID_ROWS &&
+                        WAREHOUSE_LAYOUT[neighbor.y][neighbor.x] === 0 && // Must be a path
+                        !visited.has(key)
+                    ) {
+                        visited.add(key);
+                        const newPath = [...path, neighbor];
+                        queue.push([neighbor, newPath]);
+                    }
+                }
+            }
+            return null; // No path found
+        }
+        
+        function getPathDistance(workerPos, taskPos) {
+            const getNearestPathCell = (pos) => {
+                if (WAREHOUSE_LAYOUT[pos.y][pos.x] === 0) return pos;
+                const neighbors = [
+                    {x: pos.x + 1, y: pos.y}, {x: pos.x - 1, y: pos.y},
+                    {x: pos.x, y: pos.y + 1}, {x: pos.x, y: pos.y - 1}
+                ];
+                 for (const n of neighbors) {
+                    if (n.x >= 0 && n.x < GRID_COLS && n.y >= 0 && n.y < GRID_ROWS && WAREHOUSE_LAYOUT[n.y][n.x] === 0) {
+                        return n;
+                    }
+                }
+                return null;
+            };
+
+            const workerPathStart = getNearestPathCell(workerPos);
+            const taskPathEnd = getNearestPathCell(taskPos);
+
+            if (!workerPathStart || !taskPathEnd) return { distance: Infinity, path: [] };
+
+            const path = findShortestPath(workerPathStart, taskPathEnd);
+            if (!path) return { distance: Infinity, path: [] };
+            
+            const distance = path.length + (workerPathStart !== workerPos) + (taskPathEnd !== taskPos);
+            
+            let fullPath = [...path];
+            if (taskPathEnd !== taskPos) fullPath.push(taskPos);
+
+            return { distance, path: fullPath };
+        }
+
+        // --- Rendering Logic ---
+        function getElementPositionPercentage(x, y) {
+            const cellWidth = 100 / GRID_COLS;
+            const cellHeight = 100 / GRID_ROWS;
+            return {
+                left: `${x * cellWidth + cellWidth / 2}%`,
+                top: `${y * cellHeight + cellHeight / 2}%`,
+            };
+        }
+
+        function renderGrid() {
+            warehouse.innerHTML = '';
+            for (let y = 0; y < GRID_ROWS; y++) {
+                for (let x = 0; x < GRID_COLS; x++) {
+                    const cell = document.createElement('div');
+                    cell.className = `grid-cell ${WAREHOUSE_LAYOUT[y][x] === 0 ? 'path' : 'rack'}`;
+                    warehouse.appendChild(cell);
+                }
+            }
+        }
+        
+        function positionObject(element, x, y, transitionType = 'left 0.5s linear, top 0.5s linear') {
+            if (!element) return;
+            const pos = getElementPositionPercentage(x, y);
+            element.style.transition = transitionType;
+            element.style.left = pos.left;
+            element.style.top = pos.top;
+        }
+
+        function renderWorker(pos) {
+            let workerEl = document.getElementById('worker');
+            if (!workerEl) {
+                workerEl = document.createElement('div');
+                workerEl.id = 'worker';
+                workerEl.className = 'worker';
+                workerEl.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="white" viewBox="0 0 256 256"><path d="M224,128a96,96,0,1,1-96-96A96,96,0,0,1,224,128ZM48,128a80,80,0,1,0,80-80A80.09,80.09,0,0,0,48,128Zm156.39-42.61a8,8,0,0,0-10.78,2L166,115a40,40,0,1,0-44,44l-27.58,27.59a8,8,0,0,0,5.66,13.65,8,8,0,0,0,5.65-2.34L133.3,170A40,40,0,1,0,178,126l27.59-27.59A8,8,0,0,0,204.39,85.39Z"></path></svg>`;
+                warehouse.appendChild(workerEl);
+            }
+            positionObject(workerEl, pos.x, pos.y, 'none');
+        }
+        
+        async function moveWorkerAlongPath(path, task) {
+            const workerEl = document.getElementById('worker');
+            const rfScreenEl = document.getElementById('rf-screen');
+
+            // Show and populate RF Screen
+            if (task) {
+                rfScreenEl.innerHTML = `
+                    <div class="bg-slate-700 text-white text-sm font-bold p-1 rounded-t-md text-center">RF-PLUS TERMINAL</div>
+                    <div class="p-2 bg-slate-50">
+                        <div class="text-base font-bold uppercase text-slate-600">${task.type}</div>
+                        <div class="text-lg font-semibold text-slate-900 mt-1">LOC: ${task.required_zone}-${String(task.x).padStart(2,'0')}-${String(task.y).padStart(2,'0')}</div>
+                        <div class="text-base text-slate-700">ITEM: ${task.itemName}</div>
+                        <div class="text-base text-slate-700">QTY: <span class="font-bold text-xl">${task.qty}</span></div>
+                    </div>
+                `;
+                rfScreenEl.classList.remove('hidden');
+                rfScreenEl.style.opacity = '1';
+            }
+
+            for(const step of path) {
+                positionObject(workerEl, step.x, step.y);
+                if (task) positionObject(rfScreenEl, step.x, step.y);
+                await sleep(500);
+            }
+
+            if (task) {
+                 rfScreenEl.style.opacity = '0';
+                 await sleep(300);
+                 rfScreenEl.classList.add('hidden');
+            }
+        }
+
+        function renderTasksInQueue() {
+            taskQueue.innerHTML = '';
+            tasks.forEach(task => {
+                const taskEl = document.createElement('div');
+                taskEl.id = `task-${task.id}`;
+                taskEl.className = `task ${task.type}`;
+                taskEl.textContent = task.id;
+                taskQueue.appendChild(taskEl);
+            });
+        }
+        
+        function highlightStep(stepNum) {
+            steps.forEach(s => s.classList.remove('active'));
+            const activeStep = document.querySelector(`.step-info[data-step="${stepNum}"]`);
+            if (activeStep) activeStep.classList.add('active');
+        }
+        
+        function updateStatus(message) {
+            statusMessage.textContent = message;
+            statusMessage.classList.add('opacity-100');
+        }
+        
+        async function discardTask(taskEl) {
+            taskEl.style.transition = 'opacity 0.5s ease, transform 0.5s ease';
+            requestAnimationFrame(() => {
+                taskEl.style.opacity = '0';
+                taskEl.style.transform = 'scale(0.5)';
+            });
+            await sleep(500);
+            taskEl.style.display = 'none';
+        }
+
+        async function runIntroAnimation() {
+            updateStatus('WMS is generating tasks based on system rules...');
+            introRulesContainer.classList.remove('hidden');
+            mainStepsContainer.classList.add('hidden');
+            taskQueue.innerHTML = '';
+
+            const putawayTasks = tasks.filter(t => t.type === 'putaway');
+            const allocationTasks = tasks.filter(t => t.type !== 'putaway');
+
+            const animateTaskGeneration = async (sourceBox, tasksToAnimate) => {
+                for (const task of tasksToAnimate) {
+                    const flyingEl = document.createElement('div');
+                    flyingEl.className = `task ${task.type}`;
+                    
+                    const sourceRect = sourceBox.getBoundingClientRect();
+                    const containerRect = animationContainer.getBoundingClientRect();
+                    
+                    flyingEl.style.position = 'absolute';
+                    flyingEl.style.left = `${sourceRect.left - containerRect.left + sourceRect.width / 2}px`;
+                    flyingEl.style.top = `${sourceRect.top - containerRect.top + sourceRect.height / 2}px`;
+                    flyingEl.style.zIndex = 50;
+                    
+                    animationContainer.appendChild(flyingEl);
+
+                    await sleep(50);
+
+                    const queueRect = taskQueue.getBoundingClientRect();
+                    const targetLeft = queueRect.left - containerRect.left + Math.random() * queueRect.width;
+                    const targetTop = queueRect.top - containerRect.top + 10;
+
+                    requestAnimationFrame(() => {
+                         flyingEl.style.transition = 'all 0.5s ease-out';
+                         flyingEl.style.left = `${targetLeft}px`;
+                         flyingEl.style.top = `${targetTop}px`;
+                    });
+
+                    await sleep(500);
+                    flyingEl.remove();
+
+                    const taskEl = document.createElement('div');
+                    taskEl.id = `task-${task.id}`;
+                    taskEl.className = `task ${task.type}`;
+                    taskEl.textContent = task.id;
+                    taskQueue.appendChild(taskEl);
+
+                    await sleep(100);
+                }
+            };
+            
+            await animateTaskGeneration(putawayRulesBox, putawayTasks);
+            await animateTaskGeneration(allocationRulesBox, allocationTasks);
+
+            await sleep(1000);
+            introRulesContainer.style.transition = 'opacity 0.5s';
+            introRulesContainer.style.opacity = '0';
+            await sleep(500);
+            introRulesContainer.classList.add('hidden');
+            mainStepsContainer.classList.remove('hidden');
+            introRulesContainer.style.opacity = '1';
+        }
+
+        async function runMainAnimation() {
+            updateStatus('Starting evaluation against the worker profile.');
+            profileCard.classList.add('shadow-xl', 'scale-105');
+            await sleep(2500);
+            profileCard.classList.remove('shadow-xl', 'scale-105');
+
+            // 1. Filter by Permissions
+            highlightStep(1);
+            profilePermissions.classList.add('profile-attribute-highlight');
+            updateStatus("Step 1.1: Filtering by allowed job types ('pick', 'putaway').");
+            let passingTasks = [];
+            for (const task of tasks) {
+                const taskEl = document.getElementById(`task-${task.id}`);
+                if (workerProfile.permissions.includes(task.type)) { passingTasks.push(task); } 
+                else { await discardTask(taskEl); }
+            }
+            tasks = passingTasks;
+            await sleep(2000);
+            profilePermissions.classList.remove('profile-attribute-highlight');
+            
+            profileZones.classList.add('profile-attribute-highlight');
+            updateStatus("Step 1.2: Filtering by allowed work zones ('A', 'C').");
+             passingTasks = [];
+             for (const task of tasks) {
+                const taskEl = document.getElementById(`task-${task.id}`);
+                if (workerProfile.allowed_zones.includes(task.required_zone)) { passingTasks.push(task); } 
+                else { await discardTask(taskEl); }
+            }
+            tasks = passingTasks;
+            await sleep(2000);
+            profileZones.classList.remove('profile-attribute-highlight');
+
+            // 2. Filter by Equipment
+            highlightStep(2);
+            profileEquipment.classList.add('profile-attribute-highlight');
+            updateStatus("Step 2: Filtering by worker equipment ('pallet jack').");
+            passingTasks = [];
+            for (const task of tasks) {
+                const taskEl = document.getElementById(`task-${task.id}`);
+                if (task.required_equipment === workerProfile.equipment) { passingTasks.push(task); } 
+                else { await discardTask(taskEl); }
+            }
+            tasks = passingTasks;
+            await sleep(2000);
+            profileEquipment.classList.remove('profile-attribute-highlight');
+
+            // Place remaining tasks on grid before priority/proximity
+            updateStatus('Placing valid tasks on the grid for final evaluation.');
+            tasks.forEach(task => {
+                 const taskEl = document.getElementById(`task-${task.id}`);
+                 taskEl.classList.add('in-grid');
+                 warehouse.appendChild(taskEl);
+                 positionObject(taskEl, task.x, task.y, 'none');
+            });
+            await sleep(1500);
+            
+            // 3. Analyze Priority
+            highlightStep(3);
+            updateStatus(`Step 3: Identifying the highest priority tasks.`);
+            const maxPriority = Math.max(...tasks.map(t => t.priority));
+            const highPriorityTasks = tasks.filter(t => t.priority === maxPriority);
+            tasks.forEach(task => {
+                if(!highPriorityTasks.includes(task)) {
+                    document.getElementById(`task-${task.id}`).classList.add('disabled');
+                }
+            });
+            await sleep(2500);
+
+
+            // 4. Analyze Proximity
+            highlightStep(4);
+            updateStatus(`Step 4: Finding the closest high-priority task.`);
+            let minDistance = Infinity;
+            let finalTask;
+
+            for(const task of highPriorityTasks) {
+                const { distance, path } = getPathDistance(initialWorkerPos, {x: task.x, y: task.y});
+                task.distance = distance;
+                task.path = path;
+                if (distance < minDistance) {
+                    minDistance = distance;
+                    finalTask = task;
+                }
+            }
+            
+            highPriorityTasks.forEach(task => {
+                const taskEl = document.getElementById(`task-${task.id}`);
+                if(task.id === finalTask.id) {
+                    taskEl.classList.add('highest-priority');
+                } else {
+                    taskEl.classList.add('disabled');
+                }
+            });
+            await sleep(2500);
+
+            
+            // 5. Assign and Interleave
+            highlightStep(5);
+            updateStatus(`Assigning optimal task: #${finalTask.id}.`);
+            await moveWorkerAlongPath(finalTask.path, finalTask);
+            
+            const completedTask1 = document.getElementById(`task-${finalTask.id}`);
+            completedTask1.style.opacity = '0';
+            completedTask1.style.transform += ' scale(0)';
+            await sleep(1000);
+            
+            updateStatus('Task complete. Checking for a nearby interleaving task.');
+            const remainingValidTasks = tasks.filter(t => t.id !== finalTask.id && !document.getElementById(`task-${t.id}`).classList.contains('disabled'));
+            
+            if (remainingValidTasks.length > 0) {
+                 let nextTask = remainingValidTasks[0];
+                 let minNextDistance = Infinity;
+                 remainingValidTasks.forEach(task => {
+                    const { distance, path } = getPathDistance({x: finalTask.x, y: finalTask.y}, {x: task.x, y: task.y});
+                    if (distance < minNextDistance) {
+                        minNextDistance = distance;
+                        nextTask = task;
+                        nextTask.path = path;
+                    }
+                });
+                
+                updateStatus(`Found nearby task #${nextTask.id}. Assigning to prevent wasted travel.`);
+                await moveWorkerAlongPath(nextTask.path, nextTask);
+
+                const completedTask2 = document.getElementById(`task-${nextTask.id}`);
+                completedTask2.style.opacity = '0';
+                completedTask2.style.transform += ' scale(0)';
+
+            } else {
+                updateStatus('No other valid tasks available for interleaving.');
+            }
+
+            // --- Finale: Show productivity ---
+            await sleep(2000);
+            updateStatus('');
+            highlightStep(0);
+            animationContainer.style.opacity = '0';
+            await sleep(500);
+            animationContainer.classList.add('hidden');
+            resultContainer.classList.remove('hidden');
+            await sleep(100);
+            document.querySelector('.productivity-result').classList.add('visible');
+            
+            await sleep(3000);
+            comparisonModal.classList.remove('hidden');
+            requestAnimationFrame(() => {
+                comparisonModal.style.opacity = '1';
+                comparisonModal.querySelector('div').style.transform = 'scale(1)';
+            });
+
+        }
+        
+        let resizeTimeout;
+        let isAnimating = false;
+
+        async function setupAndRun() {
+            if (isAnimating) return;
+            isAnimating = true;
+
+            clearTimeout(resizeTimeout);
+            comparisonModal.classList.add('hidden');
+            comparisonModal.style.opacity = '0';
+            comparisonModal.querySelector('div').style.transform = 'scale(0.95)';
+
+            animationContainer.style.opacity = '1';
+            animationContainer.classList.remove('hidden');
+            resultContainer.classList.add('hidden');
+            document.querySelector('.productivity-result').classList.remove('visible');
+            
+            document.querySelectorAll('.task.in-grid, #worker').forEach(el => el.remove());
+            profilePermissions.classList.remove('profile-attribute-highlight');
+            profileEquipment.classList.remove('profile-attribute-highlight');
+            profileZones.classList.remove('profile-attribute-highlight');
+            highlightStep(0);
+
+            initialWorkerPos = getRandomWorkerStartPosition();
+            tasks = getInitialTasks();
+            renderGrid();
+            renderWorker(initialWorkerPos);
+            
+            try {
+                await runIntroAnimation();
+                await runMainAnimation();
+            } finally {
+                isAnimating = false;
+            }
+        }
+
+        replayButton.addEventListener('click', setupAndRun);
+        closeModalButton.addEventListener('click', () => {
+             comparisonModal.style.opacity = '0';
+             comparisonModal.querySelector('div').style.transform = 'scale(0.95)';
+             setTimeout(() => comparisonModal.classList.add('hidden'), 300);
+        });
+        
+        window.addEventListener('resize', () => {
+            clearTimeout(resizeTimeout);
+            resizeTimeout = setTimeout(setupAndRun, 250);
+        });
+
+        // Use requestAnimationFrame to ensure layout is calculated before starting
+        requestAnimationFrame(() => {
+            setupAndRun();
+        });
+    </script>
+
+</body>
+</html>
+
+
+
